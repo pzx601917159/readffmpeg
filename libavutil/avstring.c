@@ -349,7 +349,8 @@ int av_match_name(const char *name, const char *names)
         return 0;
 
     namelen = strlen(name);
-    while (*names) {
+    while (*names) 
+	{
         int negate = '-' == *names;
         p = strchr(names, ',');
         if (!p)

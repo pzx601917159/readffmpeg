@@ -124,6 +124,7 @@ av_const int av_log2_16bit(unsigned v);
  * @param amax maximum value of the clip range
  * @return clipped value
  */
+ //返回amin和amax范围内最接近a的值
 static av_always_inline av_const int av_clip_c(int a, int amin, int amax)
 {
 #if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2

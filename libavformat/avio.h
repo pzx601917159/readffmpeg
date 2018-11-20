@@ -55,9 +55,10 @@
  * new elements have been added after this struct in AVFormatContext
  * or AVIOContext.
  */
+ //阻塞io中断的回调
 typedef struct AVIOInterruptCB {
-    int (*callback)(void*);
-    void *opaque;
+    int (*callback)(void*);//回调函数地址
+    void *opaque;//回调函数参数
 } AVIOInterruptCB;
 
 /**

@@ -519,9 +519,12 @@ const AVInputFormat *av_demuxer_iterate(void **opaque)
     uintptr_t i = (uintptr_t)*opaque;
     const AVInputFormat *f = NULL;
 
-    if (i < size) {
+    if (i < size) 
+	{
         f = demuxer_list[i];
-    } else if (outdev_list) {
+    } 
+	else if (outdev_list) 
+	{
         f = indev_list[i - size];
     }
 

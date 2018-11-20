@@ -53,7 +53,7 @@ typedef struct ID3v2EncContext {
     int64_t size_pos;       ///< offset of the tag total size
     int          len;       ///< size of the tag written so far
 } ID3v2EncContext;
-
+//metadata
 typedef struct ID3v2ExtraMeta {
     const char *tag;
     void *data;

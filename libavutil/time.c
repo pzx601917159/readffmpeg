@@ -52,7 +52,7 @@ int64_t av_gettime(void)
     return -1;
 #endif
 }
-
+//获取时间
 int64_t av_gettime_relative(void)
 {
 #if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)

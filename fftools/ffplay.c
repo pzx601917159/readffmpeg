@@ -60,61 +60,83 @@
 
 #include <assert.h>
 
+//进程名
 const char program_name[] = "ffplay";
+//出生年
 const int program_birth_year = 2003;
-
+//队列最大的长度
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
+//最小的帧数
 #define MIN_FRAMES 25
+//外部的时钟最小的帧数
 #define EXTERNAL_CLOCK_MIN_FRAMES 2
+//外部的时钟最大的帧数
 #define EXTERNAL_CLOCK_MAX_FRAMES 10
 
 /* Minimum SDL audio buffer size, in samples. */
+//最小的音频buffer大小
 #define SDL_AUDIO_MIN_BUFFER_SIZE 512
 /* Calculate actual buffer size keeping in mind not cause too frequent audio callbacks */
+//SDL音频每秒最大的回调次数
 #define SDL_AUDIO_MAX_CALLBACKS_PER_SEC 30
 
 /* Step size for volume control in dB */
+//音频控制的步长
 #define SDL_VOLUME_STEP (0.75)
 
-/* no AV sync correction is done if below the minimum AV sync threshold */
+/* no AV sync correction is done if below the minimum AV sync threshold *///threshold阈值
+//音视频同步的最小阈值
 #define AV_SYNC_THRESHOLD_MIN 0.04
 /* AV sync correction is done if above the maximum AV sync threshold */
+//音视频同步的最大阈值
 #define AV_SYNC_THRESHOLD_MAX 0.1
 /* If a frame duration is longer than this, it will not be duplicated to compensate AV sync */
+//音视频同步重复帧阈值
 #define AV_SYNC_FRAMEDUP_THRESHOLD 0.1
 /* no AV correction is done if too big error */
+//音视频不同步阈值
 #define AV_NOSYNC_THRESHOLD 10.0
 
 /* maximum audio speed change to get correct sync */
+//为了同步的最大的音频速度
 #define SAMPLE_CORRECTION_PERCENT_MAX 10
 
 /* external clock speed adjustment constants for realtime sources based on buffer fullness */
+//外部的最小时钟速度
 #define EXTERNAL_CLOCK_SPEED_MIN  0.900
+//外部的最大时钟速度
 #define EXTERNAL_CLOCK_SPEED_MAX  1.010
+//外部的时钟速度的步长
 #define EXTERNAL_CLOCK_SPEED_STEP 0.001
 
 /* we use about AUDIO_DIFF_AVG_NB A-V differences to make the average */
+//音视频不同步的平均值
 #define AUDIO_DIFF_AVG_NB   20
 
 /* polls for possible required screen refresh at least this often, should be less than 1/fps */
+//刷新频率
 #define REFRESH_RATE 0.01
 
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
 /* TODO: We assume that a decoded and resampled frame fits into this buffer */
+//array大小
 #define SAMPLE_ARRAY_SIZE (8 * 65536)
-
+//当前延迟
 #define CURSOR_HIDE_DELAY 1000000
 
 #define USE_ONEPASS_SUBTITLE_RENDER 1
-
+//缩放
 static unsigned sws_flags = SWS_BICUBIC;
 
-typedef struct MyAVPacketList {
+//音频包链表
+typedef struct MyAVPacketList 
+{
     AVPacket pkt;
     struct MyAVPacketList *next;
     int serial;
 } MyAVPacketList;
 
+//音视频队列
 typedef struct PacketQueue {
     MyAVPacketList *first_pkt, *last_pkt;
     int nb_packets;
@@ -122,16 +144,22 @@ typedef struct PacketQueue {
     int64_t duration;
     int abort_request;
     int serial;
-    SDL_mutex *mutex;
-    SDL_cond *cond;
+    SDL_mutex *mutex;//队列包含mutex成员
+    SDL_cond *cond;//队列包含cond成员
 } PacketQueue;
 
+//视频图片队列长度
 #define VIDEO_PICTURE_QUEUE_SIZE 3
+//
 #define SUBPICTURE_QUEUE_SIZE 16
+//一般队列长度
 #define SAMPLE_QUEUE_SIZE 9
+//帧队列长度,取三个队列中最大的长度
 #define FRAME_QUEUE_SIZE FFMAX(SAMPLE_QUEUE_SIZE, FFMAX(VIDEO_PICTURE_QUEUE_SIZE, SUBPICTURE_QUEUE_SIZE))
 
-typedef struct AudioParams {
+//音频相关参数
+typedef struct AudioParams 
+{
     int freq;
     int channels;
     int64_t channel_layout;
@@ -140,6 +168,7 @@ typedef struct AudioParams {
     int bytes_per_sec;
 } AudioParams;
 
+//时钟
 typedef struct Clock {
     double pts;           /* clock base */
     double pts_drift;     /* clock base minus time at which we updated the clock */
@@ -151,7 +180,9 @@ typedef struct Clock {
 } Clock;
 
 /* Common struct for handling all types of decoded data and allocated render buffers. */
-typedef struct Frame {
+//存储解码的数据，分配渲染的数据
+typedef struct Frame 
+{
     AVFrame *frame;
     AVSubtitle sub;
     int serial;
@@ -166,6 +197,7 @@ typedef struct Frame {
     int flip_v;
 } Frame;
 
+//帧队列
 typedef struct FrameQueue {
     Frame queue[FRAME_QUEUE_SIZE];
     int rindex;
@@ -174,17 +206,17 @@ typedef struct FrameQueue {
     int max_size;
     int keep_last;
     int rindex_shown;
-    SDL_mutex *mutex;
-    SDL_cond *cond;
-    PacketQueue *pktq;
+    SDL_mutex *mutex;//队列里面包含一个mutex成员
+    SDL_cond *cond;//队列里面包含一个cond成员
+    PacketQueue *pktq;//videostate的framequeue成员可以的到pakcetqueue成员
 } FrameQueue;
 
 enum {
-    AV_SYNC_AUDIO_MASTER, /* default choice */
-    AV_SYNC_VIDEO_MASTER,
-    AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
+    AV_SYNC_AUDIO_MASTER, /* default choice *///通过音频同步
+    AV_SYNC_VIDEO_MASTER, 	//通过视频同步
+    AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock *///通过额外的时钟来同步
 };
-
+//解码器
 typedef struct Decoder {
     AVPacket pkt;
     PacketQueue *queue;
@@ -199,10 +231,10 @@ typedef struct Decoder {
     AVRational next_pts_tb;
     SDL_Thread *decoder_tid;
 } Decoder;
-
+//视频状态
 typedef struct VideoState {
-    SDL_Thread *read_tid;
-    AVInputFormat *iformat;
+    SDL_Thread *read_tid;	//读取视频的线程
+    AVInputFormat *iformat;	//输入上下文
     int abort_request;
     int force_refresh;
     int paused;
@@ -248,7 +280,7 @@ typedef struct VideoState {
     int audio_buf_index; /* in bytes */
     int audio_write_buf_size;
     int audio_volume;
-    int muted;
+    int muted;//静音
     struct AudioParams audio_src;
 #if CONFIG_AVFILTER
     struct AudioParams audio_filter_src;
@@ -258,8 +290,13 @@ typedef struct VideoState {
     int frame_drops_early;
     int frame_drops_late;
 
-    enum ShowMode {
-        SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
+    enum ShowMode 
+	{
+        SHOW_MODE_NONE = -1,
+		SHOW_MODE_VIDEO = 0, 
+		SHOW_MODE_WAVES, 
+		SHOW_MODE_RDFT, 
+		SHOW_MODE_NB
     } show_mode;
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
     int sample_array_index;
@@ -307,6 +344,7 @@ typedef struct VideoState {
 } VideoState;
 
 /* options specified by the user */
+//用户指定的选项
 static AVInputFormat *file_iformat;
 static const char *input_filename;
 static const char *window_title;
@@ -362,15 +400,19 @@ static AVPacket flush_pkt;
 
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
-static SDL_Window *window;
-static SDL_Renderer *renderer;
-static SDL_RendererInfo renderer_info = {0};
-static SDL_AudioDeviceID audio_dev;
+static SDL_Window *window;	//sdl窗口
+static SDL_Renderer *renderer;//sdl悬念器
+static SDL_RendererInfo renderer_info = {0};//渲染器信息
+static SDL_AudioDeviceID audio_dev;//音频设备
 
-static const struct TextureFormatEntry {
+static const struct TextureFormatEntry 
+{
     enum AVPixelFormat format;
     int texture_fmt;
-} sdl_texture_format_map[] = {
+}
+
+sdl_texture_format_map[] = 
+{
     { AV_PIX_FMT_RGB8,           SDL_PIXELFORMAT_RGB332 },
     { AV_PIX_FMT_RGB444,         SDL_PIXELFORMAT_RGB444 },
     { AV_PIX_FMT_RGB555,         SDL_PIXELFORMAT_RGB555 },
@@ -476,14 +518,17 @@ static int packet_queue_put_nullpacket(PacketQueue *q, int stream_index)
 }
 
 /* packet queue handling */
+//packet队列初始化
 static int packet_queue_init(PacketQueue *q)
 {
     memset(q, 0, sizeof(PacketQueue));
+	//创建队列的mutex
     q->mutex = SDL_CreateMutex();
     if (!q->mutex) {
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
         return AVERROR(ENOMEM);
     }
+	//创建队列的cond
     q->cond = SDL_CreateCond();
     if (!q->cond) {
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
@@ -684,25 +729,35 @@ static void frame_queue_unref_item(Frame *vp)
     av_frame_unref(vp->frame);
     avsubtitle_free(&vp->sub);
 }
-
+//初始化成员，分配内存
 static int frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int keep_last)
 {
     int i;
     memset(f, 0, sizeof(FrameQueue));
-    if (!(f->mutex = SDL_CreateMutex())) {
+	//创建mutex
+    if (!(f->mutex = SDL_CreateMutex())) 
+	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
         return AVERROR(ENOMEM);
     }
-    if (!(f->cond = SDL_CreateCond())) {
+	//创建cond
+    if (!(f->cond = SDL_CreateCond())) 
+	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
         return AVERROR(ENOMEM);
     }
+	//对应的packet队列
     f->pktq = pktq;
+	//最大的大小
     f->max_size = FFMIN(max_size, FRAME_QUEUE_SIZE);
+	//保存最后一个
     f->keep_last = !!keep_last;
+	//为frame分配内存
     for (i = 0; i < f->max_size; i++)
+    {
         if (!(f->queue[i].frame = av_frame_alloc()))
             return AVERROR(ENOMEM);
+    }
     return 0;
 }
 
@@ -1389,13 +1444,14 @@ static double get_clock(Clock *c)
 static void set_clock_at(Clock *c, double pts, int serial, double time)
 {
     c->pts = pts;
-    c->last_updated = time;
+    c->last_updated = time;//上次更新的时间为当前的时间
     c->pts_drift = c->pts - time;
     c->serial = serial;
 }
 
 static void set_clock(Clock *c, double pts, int serial)
 {
+	//秒级的时间
     double time = av_gettime_relative() / 1000000.0;
     set_clock_at(c, pts, serial, time);
 }
@@ -1405,9 +1461,10 @@ static void set_clock_speed(Clock *c, double speed)
     set_clock(c, get_clock(c), c->serial);
     c->speed = speed;
 }
-
+//lock初始化
 static void init_clock(Clock *c, int *queue_serial)
 {
+	//clock初始化
     c->speed = 1.0;
     c->paused = 0;
     c->queue_serial = queue_serial;
@@ -2745,46 +2802,58 @@ static int is_realtime(AVFormatContext *s)
 }
 
 /* this thread gets the stream from the disk or the network */
+//这个线程用来读取硬盘或者网络上的数据
 static int read_thread(void *arg)
 {
     VideoState *is = arg;
     AVFormatContext *ic = NULL;
     int err, i, ret;
     int st_index[AVMEDIA_TYPE_NB];
+	//创建packet
     AVPacket pkt1, *pkt = &pkt1;
     int64_t stream_start_time;
     int pkt_in_play_range = 0;
     AVDictionaryEntry *t;
+	//创建mutex
     SDL_mutex *wait_mutex = SDL_CreateMutex();
     int scan_all_pmts_set = 0;
     int64_t pkt_ts;
 
-    if (!wait_mutex) {
+    if (!wait_mutex) 
+	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
+	//st_index初始化为-1
     memset(st_index, -1, sizeof(st_index));
+	//初始化为-1
     is->last_video_stream = is->video_stream = -1;
     is->last_audio_stream = is->audio_stream = -1;
     is->last_subtitle_stream = is->subtitle_stream = -1;
     is->eof = 0;
-
+	//分配avformat_context
     ic = avformat_alloc_context();
-    if (!ic) {
+    if (!ic) 
+	{
         av_log(NULL, AV_LOG_FATAL, "Could not allocate context.\n");
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+	//阻塞io中断的回调
     ic->interrupt_callback.callback = decode_interrupt_cb;
+	//回调的参数
     ic->interrupt_callback.opaque = is;
-    if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
+    if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) 
+	{
         av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
     }
+	//打开输入
     err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
-    if (err < 0) {
+    if (err < 0) 
+	{
         print_error(is->filename, err);
         ret = -1;
         goto fail;
@@ -3066,14 +3135,17 @@ static int read_thread(void *arg)
     SDL_DestroyMutex(wait_mutex);
     return 0;
 }
-
+//打开文件或网络流,这里的iformat为static的指针，为空
 static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 {
     VideoState *is;
-
+	//分配videostate对象
     is = av_mallocz(sizeof(VideoState));
     if (!is)
+    {
         return NULL;
+    }
+	//重新分配内存拷贝filename
     is->filename = av_strdup(filename);
     if (!is->filename)
         goto fail;
@@ -3082,38 +3154,51 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->xleft   = 0;
 
     /* start video display */
+	//开始显示视频
+	//初始化图片队列
+	//is下的framequeue的packetqueue成员指向is下的packetqueue
     if (frame_queue_init(&is->pictq, &is->videoq, VIDEO_PICTURE_QUEUE_SIZE, 1) < 0)
         goto fail;
+	//初始化字幕队列
     if (frame_queue_init(&is->subpq, &is->subtitleq, SUBPICTURE_QUEUE_SIZE, 0) < 0)
         goto fail;
+	//初始化音频队列
     if (frame_queue_init(&is->sampq, &is->audioq, SAMPLE_QUEUE_SIZE, 1) < 0)
         goto fail;
-
+	//初始化paket，视频，音频和字幕
     if (packet_queue_init(&is->videoq) < 0 ||
         packet_queue_init(&is->audioq) < 0 ||
         packet_queue_init(&is->subtitleq) < 0)
         goto fail;
 
-    if (!(is->continue_read_thread = SDL_CreateCond())) {
+	//创建线程
+    if (!(is->continue_read_thread = SDL_CreateCond())) 
+	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
         goto fail;
     }
-
+	//初始化lock
     init_clock(&is->vidclk, &is->videoq.serial);
     init_clock(&is->audclk, &is->audioq.serial);
     init_clock(&is->extclk, &is->extclk.serial);
-    is->audio_clock_serial = -1;
+    is->audio_clock_serial = -1;//序列号为-1
     if (startup_volume < 0)
         av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume);
     if (startup_volume > 100)
         av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", startup_volume);
+	//规定范围内最接近startup_volume的值
     startup_volume = av_clip(startup_volume, 0, 100);
     startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
+	//音量的值
     is->audio_volume = startup_volume;
+	//是否静音
     is->muted = 0;
+	//音视频同步方法
     is->av_sync_type = av_sync_type;
+	//创建读取数据的线程
     is->read_tid     = SDL_CreateThread(read_thread, "read_thread", is);
-    if (!is->read_tid) {
+    if (!is->read_tid) 
+	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateThread(): %s\n", SDL_GetError());
 fail:
         stream_close(is);
@@ -3264,6 +3349,7 @@ static void seek_chapter(VideoState *is, int incr)
 }
 
 /* handle an event sent by the GUI */
+//处理界面发送的事件
 static void event_loop(VideoState *cur_stream)
 {
     SDL_Event event;
@@ -3272,8 +3358,9 @@ static void event_loop(VideoState *cur_stream)
     for (;;) {
         double x;
         refresh_loop_wait_event(cur_stream, &event);
-        switch (event.type) {
-        case SDL_KEYDOWN:
+        switch (event.type) 
+		{
+        case SDL_KEYDOWN://按键
             if (exit_on_keydown || event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q) {
                 do_exit(cur_stream);
                 break;
@@ -3385,7 +3472,7 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
             break;
-        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONDOWN://鼠标按下
             if (exit_on_mousedown) {
                 do_exit(cur_stream);
                 break;
@@ -3400,7 +3487,7 @@ static void event_loop(VideoState *cur_stream)
                     last_mouse_left_click = av_gettime_relative();
                 }
             }
-        case SDL_MOUSEMOTION:
+        case SDL_MOUSEMOTION://鼠标时间
             if (cursor_hidden) {
                 SDL_ShowCursor(1);
                 cursor_hidden = 0;
@@ -3440,7 +3527,7 @@ static void event_loop(VideoState *cur_stream)
                     stream_seek(cur_stream, ts, 0, 0);
                 }
             break;
-        case SDL_WINDOWEVENT:
+        case SDL_WINDOWEVENT://窗口事件
             switch (event.window.event) {
                 case SDL_WINDOWEVENT_RESIZED:
                     screen_width  = cur_stream->width  = event.window.data1;
@@ -3453,8 +3540,8 @@ static void event_loop(VideoState *cur_stream)
                     cur_stream->force_refresh = 1;
             }
             break;
-        case SDL_QUIT:
-        case FF_QUIT_EVENT:
+        case SDL_QUIT://退出
+        case FF_QUIT_EVENT://退出
             do_exit(cur_stream);
             break;
         default:
@@ -3483,6 +3570,7 @@ static int opt_height(void *optctx, const char *opt, const char *arg)
 
 static int opt_format(void *optctx, const char *opt, const char *arg)
 {
+	//这里初始化file_iformat
     file_iformat = av_find_input_format(arg);
     if (!file_iformat) {
         av_log(NULL, AV_LOG_FATAL, "Unknown input format: %s\n", arg);
@@ -3570,7 +3658,8 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
 
 static int dummy;
 
-static const OptionDef options[] = {
+static const OptionDef options[] = 
+{
     CMDUTILS_COMMON_OPTIONS
     { "x", HAS_ARG, { .func_arg = opt_width }, "force displayed width", "width" },
     { "y", HAS_ARG, { .func_arg = opt_height }, "force displayed height", "height" },
@@ -3667,14 +3756,17 @@ void show_help_default(const char *opt, const char *arg)
 }
 
 /* Called from the main */
+//入口函数
 int main(int argc, char **argv)
 {
     int flags;
+	//全局的状态
     VideoState *is;
-
+	//只有windows下调用
     init_dynload();
-
+	//设置log的标志
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
+	//解析log等级
     parse_loglevel(argc, argv, options);
 
     /* register all codecs, demux and protocols */
@@ -3684,15 +3776,16 @@ int main(int argc, char **argv)
     avformat_network_init();
 
     init_opts();
-
+	//设置信号处理函数
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).    */
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
-
+	//显示banner
     show_banner(argc, argv, options);
-
+	//获取filename
     parse_options(NULL, argc, argv, options, opt_input_file);
-
-    if (!input_filename) {
+	//如果输入文件名为空则直接退出
+    if (!input_filename) 
+	{
         show_usage();
         av_log(NULL, AV_LOG_FATAL, "An input file must be specified\n");
         av_log(NULL, AV_LOG_FATAL,
@@ -3719,10 +3812,11 @@ int main(int argc, char **argv)
         av_log(NULL, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
-
+	//忽略SDL的事件
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
 
+	//初始化packet
     av_init_packet(&flush_pkt);
     flush_pkt.data = (uint8_t *)&flush_pkt;
 
@@ -3732,15 +3826,20 @@ int main(int argc, char **argv)
             flags |= SDL_WINDOW_BORDERLESS;
         else
             flags |= SDL_WINDOW_RESIZABLE;
+		//创建SDL的窗口
         window = SDL_CreateWindow(program_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, default_width, default_height, flags);
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-        if (window) {
+        if (window) 
+		{
+			//创建渲染器
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-            if (!renderer) {
+            if (!renderer) 
+			{
                 av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
                 renderer = SDL_CreateRenderer(window, -1, 0);
             }
-            if (renderer) {
+            if (renderer) 
+			{
                 if (!SDL_GetRendererInfo(renderer, &renderer_info))
                     av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
             }
@@ -3750,13 +3849,13 @@ int main(int argc, char **argv)
             do_exit(NULL);
         }
     }
-
+	// 打开流或者文件
     is = stream_open(input_filename, file_iformat);
     if (!is) {
         av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
         do_exit(NULL);
     }
-
+	//事件循环
     event_loop(is);
 
     /* never returns */

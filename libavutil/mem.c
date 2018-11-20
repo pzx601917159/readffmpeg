@@ -251,7 +251,8 @@ void *av_calloc(size_t nmemb, size_t size)
 char *av_strdup(const char *s)
 {
     char *ptr = NULL;
-    if (s) {
+    if (s) 
+	{
         size_t len = strlen(s) + 1;
         ptr = av_realloc(NULL, len);
         if (ptr)

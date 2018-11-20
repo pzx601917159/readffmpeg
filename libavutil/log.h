@@ -64,17 +64,20 @@ struct AVOptionRanges;
  * arbitrary struct of which the first field is a pointer to an
  * AVClass struct (e.g. AVCodecContext, AVFormatContext etc.).
  */
+//任意的指向avcodeccontext或者avxxxcontext的指针
 typedef struct AVClass {
     /**
      * The name of the class; usually it is the same name as the
      * context structure type to which the AVClass is associated.
      */
+     //class的名字
     const char* class_name;
 
     /**
      * A pointer to a function which returns the name of a context
      * instance ctx associated with the class.
      */
+     //返回class的名字
     const char* (*item_name)(void* ctx);
 
     /**

@@ -413,6 +413,7 @@ int av_demuxer_open(AVFormatContext *ic) {
 }
 
 /* Open input file and probe the format if necessary. */
+//打开文件探测格式
 static int init_input(AVFormatContext *s, const char *filename,
                       AVDictionary **options)
 {
@@ -534,24 +535,30 @@ FF_ENABLE_DEPRECATION_WARNINGS
 }
 
 
+//打开输入文件
 int avformat_open_input(AVFormatContext **ps, const char *filename,
                         AVInputFormat *fmt, AVDictionary **options)
 {
     AVFormatContext *s = *ps;
     int i, ret = 0;
     AVDictionary *tmp = NULL;
+	//metadata
     ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
+	//如果s不存在就分配内存
     if (!s && !(s = avformat_alloc_context()))
         return AVERROR(ENOMEM);
-    if (!s->av_class) {
+    if (!s->av_class) 
+	{
         av_log(NULL, AV_LOG_ERROR, "Input context has not been properly allocated by avformat_alloc_context() and is not NULL either\n");
         return AVERROR(EINVAL);
     }
+	//fmt为空
     if (fmt)
         s->iformat = fmt;
 
     if (options)
+		//拷贝dic
         av_dict_copy(&tmp, *options, 0);
 
     if (s->pb) // must be before any goto fail
@@ -559,7 +566,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
-
+	//拷贝filename
     if (!(s->url = av_strdup(filename ? filename : ""))) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -570,6 +577,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     av_strlcpy(s->filename, filename ? filename : "", sizeof(s->filename));
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+	//初始化输入
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
     s->probe_score = ret;

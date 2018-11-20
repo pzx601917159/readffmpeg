@@ -380,6 +380,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     return !!(po->flags & HAS_ARG);
 }
 
+//解析命令行参数
 void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
                    void (*parse_arg_function)(void *, const char*))
 {
@@ -391,10 +392,12 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
 
     /* parse options */
     optindex = 1;
-    while (optindex < argc) {
+    while (optindex < argc) 
+	{
         opt = argv[optindex++];
 
-        if (handleoptions && opt[0] == '-' && opt[1] != '\0') {
+        if (handleoptions && opt[0] == '-' && opt[1] != '\0') 
+		{
             if (opt[1] == '-' && opt[2] == '\0') {
                 handleoptions = 0;
                 continue;
@@ -404,7 +407,9 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
             if ((ret = parse_option(optctx, opt, argv[optindex], options)) < 0)
                 exit_program(1);
             optindex += ret;
-        } else {
+        } 
+		else 
+		{
             if (parse_arg_function)
                 parse_arg_function(optctx, opt);
         }
@@ -450,12 +455,13 @@ int locate_option(int argc, char **argv, const OptionDef *options,
     const OptionDef *po;
     int i;
 
-    for (i = 1; i < argc; i++) {
+    for (i = 1; i < argc; i++) 
+	{
         const char *cur_opt = argv[i];
 
         if (*cur_opt++ != '-')
             continue;
-
+		// 查找选项
         po = find_option(options, cur_opt);
         if (!po->name && cur_opt[0] == 'n' && cur_opt[1] == 'o')
             po = find_option(options, cur_opt + 2);

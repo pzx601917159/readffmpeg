@@ -472,16 +472,19 @@ static AVFrame *get_video_frame(OutputStream *ost)
     if (av_frame_make_writable(ost->frame) < 0)
         exit(1);
 
-    if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
+    if (c->pix_fmt != AV_PIX_FMT_YUV420P) 
+    {
         /* as we only generate a YUV420P picture, we must convert it
          * to the codec pixel format if needed */
-        if (!ost->sws_ctx) {
+        if (!ost->sws_ctx) 
+        {
             ost->sws_ctx = sws_getContext(c->width, c->height,
                                           AV_PIX_FMT_YUV420P,
                                           c->width, c->height,
                                           c->pix_fmt,
                                           SCALE_FLAGS, NULL, NULL, NULL);
-            if (!ost->sws_ctx) {
+            if (!ost->sws_ctx) 
+            {
                 fprintf(stderr,
                         "Could not initialize the conversion context\n");
                 exit(1);
@@ -491,7 +494,9 @@ static AVFrame *get_video_frame(OutputStream *ost)
         sws_scale(ost->sws_ctx, (const uint8_t * const *) ost->tmp_frame->data,
                   ost->tmp_frame->linesize, 0, c->height, ost->frame->data,
                   ost->frame->linesize);
-    } else {
+    } 
+    else 
+    {
         fill_yuv_image(ost->frame, ost->next_pts, c->width, c->height);
     }
 

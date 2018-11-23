@@ -98,7 +98,7 @@ static const AVClass av_format_context_class = {
     .category       = AV_CLASS_CATEGORY_MUXER,
     .get_category   = get_category,
 };
-
+//默认的打开io的函数
 static int io_open_default(AVFormatContext *s, AVIOContext **pb,
                            const char *url, int flags, AVDictionary **options)
 {
@@ -106,11 +106,14 @@ static int io_open_default(AVFormatContext *s, AVIOContext **pb,
 
     if (!strcmp(url, s->url) ||
         s->iformat && !strcmp(s->iformat->name, "image2") ||
-        s->oformat && !strcmp(s->oformat->name, "image2")
-    ) {
+        s->oformat && !strcmp(s->oformat->name, "image2")) 
+    {
         loglevel = AV_LOG_DEBUG;
-    } else
+    } 
+    else
+    {
         loglevel = AV_LOG_INFO;
+    }
 
     av_log(s, loglevel, "Opening \'%s\' for %s\n", url, flags & AVIO_FLAG_WRITE ? "writing" : "reading");
 

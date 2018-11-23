@@ -41,6 +41,8 @@
 
 #define RESYNC_BUFFER_SIZE (1<<20)
 
+int64_t g_user_data = 0;
+
 typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
     int trust_metadata;   ///< configure streams according onMetaData
@@ -678,6 +680,90 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     if (!strcmp(buffer, "onCaptionInfo"))
         return TYPE_ONCAPTIONINFO;
 
+#ifdef __APPLE__
+    if(!strcmp(buffer, "onMetaData"))
+    {
+        //处理metadata
+        int type = avio_r8(ioc);
+        if(type == AMF_DATA_TYPE_OBJECT)
+        {
+            char buf[32] = {0};
+            amf_get_string(ioc, buf, sizeof(buf));
+            if(!strcmp(buf,"user_data"))
+            {
+                if(avio_r8(ioc) == AMF_DATA_TYPE_STRING)
+                {
+                    memset(buf, 0, sizeof(buf));
+                    amf_get_string(ioc, buf, sizeof(buf));
+                    g_user_data = atol(buf);
+                    //onMetadata(g_user_data);
+                }
+            }
+            avio_rb24(ioc);
+            return 0;
+        }
+        else if(type == AMF_DATA_TYPE_MIXEDARRAY)
+        {
+            char buf[32]=  {0};
+            //4byte 00 00 00 01
+            avio_rb32(ioc);
+            amf_get_string(ioc, buf, sizeof(buf));
+            if(!strcmp(buf,"user_data"))
+            {
+                if(avio_r8(ioc) == AMF_DATA_TYPE_STRING)
+                {
+                    memset(buf, 0, sizeof(buf));
+                    amf_get_string(ioc, buf, sizeof(buf));
+                    g_user_data = atol(buf);
+                    //onMetadata(g_user_data);
+                }
+            }
+            avio_rb24(ioc);
+            return 0;
+        }
+    }
+#else
+    if(!strcmp(buffer, "onMetaData"))
+    {
+        //处理metadata
+        int type = avio_r8(ioc);
+        if(type == AMF_DATA_TYPE_OBJECT)
+        {
+            char buf[32] = {0};
+            amf_get_string(ioc, buf, sizeof(buf));
+            if(!strcmp(buf,"user_data"))
+            {
+                if(avio_r8(ioc) == AMF_DATA_TYPE_STRING)
+                {
+                    memset(buf, 0, sizeof(buf));
+                    amf_get_string(ioc, buf, sizeof(buf));
+                    g_user_data = strtoll(buf, buf + strlen(buf), 10);
+                }
+            }
+            avio_rb24(ioc);
+            return 0;
+        }
+        else if(type == AMF_DATA_TYPE_MIXEDARRAY)
+        {
+            char buf[32]=  {0};
+            //4byte 00 00 00 01
+            avio_rb32(ioc);
+            amf_get_string(ioc, buf, sizeof(buf));
+            if(!strcmp(buf,"user_data"))
+            {
+                if(avio_r8(ioc) == AMF_DATA_TYPE_STRING)
+                {
+                    memset(buf, 0, sizeof(buf));
+                    amf_get_string(ioc, buf, sizeof(buf));
+                    g_user_data = strtoll(buf, buf + strlen(buf), 10);
+                }
+            }
+            avio_rb24(ioc);
+            return 0;
+        }
+    }
+#endif // __APPLE__
+
     if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint")) {
         av_log(s, AV_LOG_DEBUG, "Unknown type %s\n", buffer);
         return TYPE_UNKNOWN;
@@ -896,6 +982,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
 
     pkt->stream_index = st->index;
     pkt->flags       |= AV_PKT_FLAG_KEY;
+
 
 skip:
     avio_seek(s->pb, next + 4, SEEK_SET);

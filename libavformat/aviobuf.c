@@ -985,9 +985,12 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     int buffer_size, max_packet_size;
 
     max_packet_size = h->max_packet_size;
-    if (max_packet_size) {
+    if (max_packet_size) 
+    {
         buffer_size = max_packet_size; /* no need to bufferize more than one packet */
-    } else {
+    } 
+    else 
+    {
         buffer_size = IO_BUFFER_SIZE;
     }
     buffer = av_malloc(buffer_size);
@@ -1006,12 +1009,14 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         goto fail;
 
     (*s)->protocol_whitelist = av_strdup(h->protocol_whitelist);
-    if (!(*s)->protocol_whitelist && h->protocol_whitelist) {
+    if (!(*s)->protocol_whitelist && h->protocol_whitelist) 
+    {
         avio_closep(s);
         goto fail;
     }
     (*s)->protocol_blacklist = av_strdup(h->protocol_blacklist);
-    if (!(*s)->protocol_blacklist && h->protocol_blacklist) {
+    if (!(*s)->protocol_blacklist && h->protocol_blacklist) 
+    {
         avio_closep(s);
         goto fail;
     }
@@ -1020,7 +1025,8 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     (*s)->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
     (*s)->max_packet_size = max_packet_size;
     (*s)->min_packet_size = h->min_packet_size;
-    if(h->prot) {
+    if(h->prot) 
+    {
         (*s)->read_pause = io_read_pause;
         (*s)->read_seek  = io_read_seek;
 
@@ -1155,7 +1161,7 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
 {
     return avio_open2(s, filename, flags, NULL, NULL);
 }
-
+//默认的io函数
 int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
                          const AVIOInterruptCB *int_cb, AVDictionary **options,
                          const char *whitelist, const char *blacklist
@@ -1163,12 +1169,14 @@ int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
 {
     URLContext *h;
     int err;
-
+    //连接url
     err = ffurl_open_whitelist(&h, filename, flags, int_cb, options, whitelist, blacklist, NULL);
     if (err < 0)
         return err;
+    //文件io
     err = ffio_fdopen(s, h);
-    if (err < 0) {
+    if (err < 0) 
+    {
         ffurl_close(h);
         return err;
     }

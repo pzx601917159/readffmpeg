@@ -178,42 +178,45 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
     av_assert0(!(e=av_dict_get(*options, "protocol_blacklist", NULL, 0)) ||
                (uc->protocol_blacklist && !strcmp(uc->protocol_blacklist, e->value)));
 
-    if (uc->protocol_whitelist && av_match_list(uc->prot->name, uc->protocol_whitelist, ',') <= 0) {
+    if (uc->protocol_whitelist && av_match_list(uc->prot->name, uc->protocol_whitelist, ',') <= 0) 
+    {
         av_log(uc, AV_LOG_ERROR, "Protocol '%s' not on whitelist '%s'!\n", uc->prot->name, uc->protocol_whitelist);
         return AVERROR(EINVAL);
     }
 
-    if (uc->protocol_blacklist && av_match_list(uc->prot->name, uc->protocol_blacklist, ',') > 0) {
+    if (uc->protocol_blacklist && av_match_list(uc->prot->name, uc->protocol_blacklist, ',') > 0) 
+    {
         av_log(uc, AV_LOG_ERROR, "Protocol '%s' on blacklist '%s'!\n", uc->prot->name, uc->protocol_blacklist);
         return AVERROR(EINVAL);
     }
 
-    if (!uc->protocol_whitelist && uc->prot->default_whitelist) {
+    if (!uc->protocol_whitelist && uc->prot->default_whitelist) 
+    {
         av_log(uc, AV_LOG_DEBUG, "Setting default whitelist '%s'\n", uc->prot->default_whitelist);
         uc->protocol_whitelist = av_strdup(uc->prot->default_whitelist);
         if (!uc->protocol_whitelist) {
             return AVERROR(ENOMEM);
         }
-    } else if (!uc->protocol_whitelist)
+    } 
+    else if (!uc->protocol_whitelist)
+    {
         av_log(uc, AV_LOG_DEBUG, "No default whitelist set\n"); // This should be an error once all declare a default whitelist
+    }
 
     if ((err = av_dict_set(options, "protocol_whitelist", uc->protocol_whitelist, 0)) < 0)
         return err;
     if ((err = av_dict_set(options, "protocol_blacklist", uc->protocol_blacklist, 0)) < 0)
         return err;
 
-    err =
-        uc->prot->url_open2 ? uc->prot->url_open2(uc,
-                                                  uc->filename,
-                                                  uc->flags,
-                                                  options) :
-        uc->prot->url_open(uc, uc->filename, uc->flags);
+    err = uc->prot->url_open2 ? uc->prot->url_open2(uc, uc->filename, uc->flags,options) : uc->prot->url_open(uc, uc->filename, uc->flags);
 
     av_dict_set(options, "protocol_whitelist", NULL, 0);
     av_dict_set(options, "protocol_blacklist", NULL, 0);
 
     if (err)
+    {
         return err;
+    }
     uc->is_connected = 1;
     /* We must be careful here as ffurl_seek() could be slow,
      * for example for http */

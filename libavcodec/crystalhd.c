@@ -561,7 +561,8 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
                                     AVFrame *frame, int *got_frame)
 {
     BC_STATUS ret;
-    BC_DTS_PROC_OUT output = {
+    BC_DTS_PROC_OUT output = 
+    {
         .PicInfo.width  = avctx->width,
         .PicInfo.height = avctx->height,
     };
@@ -572,11 +573,13 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
 
     // Request decoded data from the driver
     ret = DtsProcOutputNoCopy(dev, OUTPUT_PROC_TIMEOUT, &output);
-    if (ret == BC_STS_FMT_CHANGE) {
+    if (ret == BC_STS_FMT_CHANGE) 
+    {
         av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Initial format change\n");
         avctx->width  = output.PicInfo.width;
         avctx->height = output.PicInfo.height;
-        switch ( output.PicInfo.aspect_ratio ) {
+        switch ( output.PicInfo.aspect_ratio ) 
+        {
         case vdecAspectRatioSquare:
             avctx->sample_aspect_ratio = (AVRational) {  1,  1};
             break;

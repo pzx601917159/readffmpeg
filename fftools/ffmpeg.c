@@ -4853,7 +4853,8 @@ int main(int argc, char **argv)
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
 
-    if(argc>1 && !strcmp(argv[1], "-d")){
+    if(argc>1 && !strcmp(argv[1], "-d"))
+    {
         run_as_daemon=1;
         av_log_set_callback(log_callback_null);
         argc--;
@@ -4872,14 +4873,16 @@ int main(int argc, char **argv)
     if (ret < 0)
         exit_program(1);
 
-    if (nb_output_files <= 0 && nb_input_files == 0) {
+    if (nb_output_files <= 0 && nb_input_files == 0) 
+    {
         show_usage();
         av_log(NULL, AV_LOG_WARNING, "Use -h to get full help or, even better, run 'man %s'\n", program_name);
         exit_program(1);
     }
 
     /* file converter / grab */
-    if (nb_output_files <= 0) {
+    if (nb_output_files <= 0) 
+    {
         av_log(NULL, AV_LOG_FATAL, "At least one output file must be specified\n");
         exit_program(1);
     }
@@ -4889,7 +4892,8 @@ int main(int argc, char **argv)
 //         exit_program(1);
 //     }
 
-    for (i = 0; i < nb_output_files; i++) {
+    for (i = 0; i < nb_output_files; i++) 
+    {
         if (strcmp(output_files[i]->ctx->oformat->name, "rtp"))
             want_sdp = 0;
     }
@@ -4897,7 +4901,8 @@ int main(int argc, char **argv)
     current_time = ti = get_benchmark_time_stamps();
     if (transcode() < 0)
         exit_program(1);
-    if (do_benchmark) {
+    if (do_benchmark) 
+    {
         int64_t utime, stime, rtime;
         current_time = get_benchmark_time_stamps();
         utime = current_time.user_usec - ti.user_usec;

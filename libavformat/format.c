@@ -34,7 +34,7 @@
  * @file
  * Format register and lookup
  */
-
+//后缀名匹配
 int av_match_ext(const char *filename, const char *extensions)
 {
     const char *ext;
@@ -127,8 +127,8 @@ AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
-                                      int *score_ret)
+//探测视频格式,得到inputformart
+AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score_ret)
 {
     AVProbeData lpd = *pd;
     const AVInputFormat *fmt1 = NULL;
@@ -136,7 +136,8 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     int score, score_max = 0;
     void *i = 0;
     const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
-    enum nodat {
+    enum nodat 
+    {
         NO_ID3,
         ID3_ALMOST_GREATER_PROBE,
         ID3_GREATER_PROBE,
@@ -146,29 +147,43 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     if (!lpd.buf)
         lpd.buf = (unsigned char *) zerobuffer;
 
-    if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
+    if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) 
+    {
         int id3len = ff_id3v2_tag_len(lpd.buf);
-        if (lpd.buf_size > id3len + 16) {
+        if (lpd.buf_size > id3len + 16) 
+        {
             if (lpd.buf_size < 2LL*id3len + 16)
+            {
                 nodat = ID3_ALMOST_GREATER_PROBE;
+            }
             lpd.buf      += id3len;
             lpd.buf_size -= id3len;
-        } else if (id3len >= PROBE_BUF_MAX) {
+        } 
+        else if (id3len >= PROBE_BUF_MAX) 
+        {
             nodat = ID3_GREATER_MAX_PROBE;
-        } else
+        } 
+        else
+        {
             nodat = ID3_GREATER_PROBE;
+        }
     }
 
-    while ((fmt1 = av_demuxer_iterate(&i))) {
+    while ((fmt1 = av_demuxer_iterate(&i))) 
+    {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
         score = 0;
-        if (fmt1->read_probe) {
+        if (fmt1->read_probe) 
+        {
             score = fmt1->read_probe(&lpd);
             if (score)
                 av_log(NULL, AV_LOG_TRACE, "Probing %s score:%d size:%d\n", fmt1->name, score, lpd.buf_size);
-            if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
-                switch (nodat) {
+            //后缀名是否匹配
+            if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) 
+            {
+                switch (nodat) 
+                {
                 case NO_ID3:
                     score = FFMAX(score, 1);
                     break;
@@ -181,34 +196,45 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
                     break;
                 }
             }
-        } else if (fmt1->extensions) {
+        }
+        else if (fmt1->extensions) 
+        {
             if (av_match_ext(lpd.filename, fmt1->extensions))
                 score = AVPROBE_SCORE_EXTENSION;
         }
-        if (av_match_name(lpd.mime_type, fmt1->mime_type)) {
-            if (AVPROBE_SCORE_MIME > score) {
+        if (av_match_name(lpd.mime_type, fmt1->mime_type)) 
+        {
+            if (AVPROBE_SCORE_MIME > score) 
+            {
                 av_log(NULL, AV_LOG_DEBUG, "Probing %s score:%d increased to %d due to MIME type\n", fmt1->name, score, AVPROBE_SCORE_MIME);
                 score = AVPROBE_SCORE_MIME;
             }
         }
-        if (score > score_max) {
+        if (score > score_max) 
+        {
             score_max = score;
             fmt       = (AVInputFormat*)fmt1;
-        } else if (score == score_max)
+        } 
+        else if (score == score_max)
+        {
             fmt = NULL;
+        }
     }
     if (nodat == ID3_GREATER_PROBE)
+    {
         score_max = FFMIN(AVPROBE_SCORE_EXTENSION / 2 - 1, score_max);
+    }
     *score_ret = score_max;
 
     return fmt;
 }
-
+//探测视频格式
 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
 {
     int score_ret;
     AVInputFormat *fmt = av_probe_input_format3(pd, is_opened, &score_ret);
-    if (score_ret > *score_max) {
+    if (score_ret > *score_max) 
+    {
         *score_max = score_ret;
         return fmt;
     } else
@@ -232,8 +258,11 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     int ret2;
 
     if (!max_probe_size)
+    {
         max_probe_size = PROBE_BUF_MAX;
-    else if (max_probe_size < PROBE_BUF_MIN) {
+    }
+    else if (max_probe_size < PROBE_BUF_MIN) 
+    {
         av_log(logctx, AV_LOG_ERROR,
                "Specified probe size value %u cannot be < %u\n", max_probe_size, PROBE_BUF_MIN);
         return AVERROR(EINVAL);
@@ -242,7 +271,8 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     if (offset >= max_probe_size)
         return AVERROR(EINVAL);
 
-    if (pb->av_class) {
+    if (pb->av_class) 
+    {
         uint8_t *mime_type_opt = NULL;
         char *semi;
         av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type_opt);
@@ -253,16 +283,19 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
         }
     }
 
+    //读取数据，获取格式
     for (probe_size = PROBE_BUF_MIN; probe_size <= max_probe_size && !*fmt;
          probe_size = FFMIN(probe_size << 1,
-                            FFMAX(max_probe_size, probe_size + 1))) {
+                            FFMAX(max_probe_size, probe_size + 1))) 
+    {
         score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
 
         /* Read probe data. */
         if ((ret = av_reallocp(&buf, probe_size + AVPROBE_PADDING_SIZE)) < 0)
             goto fail;
-        if ((ret = avio_read(pb, buf + buf_offset,
-                             probe_size - buf_offset)) < 0) {
+        //读取数据
+        if ((ret = avio_read(pb, buf + buf_offset, probe_size - buf_offset)) < 0) 
+        {
             /* Fail if error was not end of file, otherwise, lower score. */
             if (ret != AVERROR_EOF)
                 goto fail;
@@ -279,17 +312,23 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
         memset(pd.buf + pd.buf_size, 0, AVPROBE_PADDING_SIZE);
 
         /* Guess file format. */
+        //探测格式
         *fmt = av_probe_input_format2(&pd, 1, &score);
-        if (*fmt) {
+        if (*fmt) 
+        {
             /* This can only be true in the last iteration. */
-            if (score <= AVPROBE_SCORE_RETRY) {
+            if (score <= AVPROBE_SCORE_RETRY) 
+            {
                 av_log(logctx, AV_LOG_WARNING,
                        "Format %s detected only with low score of %d, "
                        "misdetection possible!\n", (*fmt)->name, score);
-            } else
+            } 
+            else
+            {
                 av_log(logctx, AV_LOG_DEBUG,
                        "Format %s probed with size=%d and score=%d\n",
                        (*fmt)->name, probe_size, score);
+            }
 #if 0
             FILE *f = fopen("probestat.tmp", "ab");
             fprintf(f, "probe_size:%d format:%s score:%d filename:%s\n", probe_size, (*fmt)->name, score, filename);
@@ -297,7 +336,7 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
 #endif
         }
     }
-
+    //探测视频格式失败
     if (!*fmt)
         ret = AVERROR_INVALIDDATA;
 

@@ -98,7 +98,7 @@ static const AVClass av_format_context_class = {
     .category       = AV_CLASS_CATEGORY_MUXER,
     .get_category   = get_category,
 };
-
+//默认的打开io的函数
 static int io_open_default(AVFormatContext *s, AVIOContext **pb,
                            const char *url, int flags, AVDictionary **options)
 {

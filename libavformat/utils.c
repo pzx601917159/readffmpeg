@@ -419,9 +419,11 @@ static int init_input(AVFormatContext *s, const char *filename,
 {
     int ret;
     AVProbeData pd = { filename, NULL, 0 };
+	//得分
     int score = AVPROBE_SCORE_RETRY;
 
-    if (s->pb) {
+    if (s->pb) 
+	{
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
         if (!s->iformat)
             return av_probe_input_buffer2(s->pb, &s->iformat, filename,
@@ -435,7 +437,7 @@ static int init_input(AVFormatContext *s, const char *filename,
     if ((s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
         (!s->iformat && (s->iformat = av_probe_input_format2(&pd, 0, &score))))
         return score;
-
+	//这里的回调函数如果没有设置的话就是默认的回调函数
     if ((ret = s->io_open(s, &s->pb, filename, AVIO_FLAG_READ | s->avio_flags, options)) < 0)
         return ret;
 

@@ -445,11 +445,12 @@ struct AVCodecTag;
 /**
  * This structure contains the data a format has to probe a file.
  */
+ //探测文件格式的数据
 typedef struct AVProbeData {
-    const char *filename;
-    unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
-    int buf_size;       /**< Size of buf except extra allocated bytes */
-    const char *mime_type; /**< mime_type, when known. */
+    const char *filename; 	//文件名
+    unsigned char *buf; 	/**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
+    int buf_size;       	/**< Size of buf except extra allocated bytes */
+    const char *mime_type; 	/**< mime_type, when known. *///Multipurpose Internet Mail Extensions
 } AVProbeData;
 
 #define AVPROBE_SCORE_RETRY (AVPROBE_SCORE_MAX/4)
@@ -1366,15 +1367,17 @@ typedef struct AVFormatContext {
 
     /**
      * I/O context.
-     *
+     *		//解码器：用户在av_fromat_open_input钱设置或者或者在avformat_open_input中设置
      * - demuxing: either set by the user before avformat_open_input() (then
      *             the user must close it manually) or set by avformat_open_input().
+  	 * 		//编码器：用户在avformat_write_header前设置，这个调用必须注意不要释放IOcontext，用户设置的用户来释放
      * - muxing: set by the user before avformat_write_header(). The caller must
      *           take care of closing / freeing the IO context.
-     *
+     *	//不要设置这个选项，如果iformat/oformat.flags中的AVFMT_NOFILE标志位设置了
      * Do NOT set this field if AVFMT_NOFILE flag is set in
      * iformat/oformat.flags. In such a case, the (de)muxer will handle
      * I/O in some other way and this field will be NULL.
+     * 在这种情况下，解码器会通过其他方式处理，这个值为空
      */
     AVIOContext *pb;
 
@@ -1574,7 +1577,7 @@ typedef struct AVFormatContext {
      *
      * Freed by libavformat in avformat_free_context().
      */
-    AVDictionary *metadata;
+    AVDictionary *metadata;//metadata
 
     /**
      * Start time of the stream in real world time, in microseconds
@@ -1897,6 +1900,7 @@ typedef struct AVFormatContext {
     char *protocol_whitelist;
 
     /**
+     * 打开io的回调函数
      * A callback for opening new IO streams.
      *
      * Whenever a muxer or a demuxer needs to open an IO stream (typically from

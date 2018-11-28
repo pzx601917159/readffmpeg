@@ -5692,7 +5692,7 @@ typedef struct AVBSFInternal AVBSFInternal;
 
 /**
  * The bitstream filter state.
- *
+ * bitstream filter上下文
  * This struct must be allocated with av_bsf_alloc() and freed with
  * av_bsf_free().
  *
@@ -5700,7 +5700,8 @@ typedef struct AVBSFInternal AVBSFInternal;
  * filter) as described in their documentation, and are to be considered
  * immutable otherwise.
  */
-typedef struct AVBSFContext {
+typedef struct AVBSFContext 
+{
     /**
      * A class for logging and AVOptions
      */

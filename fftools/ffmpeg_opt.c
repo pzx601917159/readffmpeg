@@ -2067,19 +2067,20 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
 
     avfilter_inout_free(&ofilter->out_tmp);
 }
-
+//初始化滤镜
 static int init_complex_filters(void)
 {
     int i, ret = 0;
 
-    for (i = 0; i < nb_filtergraphs; i++) {
+    for (i = 0; i < nb_filtergraphs; i++) 
+    {
         ret = init_complex_filtergraph(filtergraphs[i]);
         if (ret < 0)
             return ret;
     }
     return 0;
 }
-
+//打开输入文件
 static int open_output_file(OptionsContext *o, const char *filename)
 {
     AVFormatContext *oc;
@@ -3203,8 +3204,8 @@ void show_usage(void)
 }
 
 enum OptGroup {
-    GROUP_OUTFILE,
-    GROUP_INFILE,
+    GROUP_OUTFILE,  //输出文件的参数
+    GROUP_INFILE,   //输入文件的参数
 };
 
 static const OptionGroupDef groups[] = {
@@ -3212,12 +3213,19 @@ static const OptionGroupDef groups[] = {
     [GROUP_INFILE]  = { "input url",   "i",  OPT_INPUT },
 };
 
+/*
+ * 打开文件
+ * 参数一：输入文件的命令行选项
+ * 参数二：输入文件名
+ * 参数三：回调函数
+ */
 static int open_files(OptionGroupList *l, const char *inout,
                       int (*open_file)(OptionsContext*, const char*))
 {
     int i, ret;
 
-    for (i = 0; i < l->nb_groups; i++) {
+    for (i = 0; i < l->nb_groups; i++) 
+    {
         OptionGroup *g = &l->groups[i];
         OptionsContext o;
 
@@ -3225,7 +3233,8 @@ static int open_files(OptionGroupList *l, const char *inout,
         o.g = g;
 
         ret = parse_optgroup(&o, g);
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             av_log(NULL, AV_LOG_ERROR, "Error parsing options for %s file "
                    "%s.\n", inout, g->arg);
             return ret;
@@ -3234,7 +3243,8 @@ static int open_files(OptionGroupList *l, const char *inout,
         av_log(NULL, AV_LOG_DEBUG, "Opening an %s file: %s.\n", inout, g->arg);
         ret = open_file(&o, g->arg);
         uninit_options(&o);
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             av_log(NULL, AV_LOG_ERROR, "Error opening %s file %s.\n",
                    inout, g->arg);
             return ret;
@@ -3244,7 +3254,7 @@ static int open_files(OptionGroupList *l, const char *inout,
 
     return 0;
 }
-
+//解析命令行选项，打开输入输出文件
 int ffmpeg_parse_options(int argc, char **argv)
 {
     OptionParseContext octx;
@@ -3254,40 +3264,51 @@ int ffmpeg_parse_options(int argc, char **argv)
     memset(&octx, 0, sizeof(octx));
 
     /* split the commandline into an internal representation */
+    //分离命令行参数
     ret = split_commandline(&octx, argc, argv, options, groups,
                             FF_ARRAY_ELEMS(groups));
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_log(NULL, AV_LOG_FATAL, "Error splitting the argument list: ");
         goto fail;
     }
 
     /* apply global options */
+    //应用全局的选项
     ret = parse_optgroup(NULL, &octx.global_opts);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_log(NULL, AV_LOG_FATAL, "Error parsing global options: ");
         goto fail;
     }
 
     /* configure terminal and setup signal handlers */
+    //设置信号屏蔽函数
     term_init();
 
     /* open input files */
+    //打开输入文件
     ret = open_files(&octx.groups[GROUP_INFILE], "input", open_input_file);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_log(NULL, AV_LOG_FATAL, "Error opening input files: ");
         goto fail;
     }
 
     /* create the complex filtergraphs */
+    //创建复合滤镜
     ret = init_complex_filters();
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_log(NULL, AV_LOG_FATAL, "Error initializing complex filters.\n");
         goto fail;
     }
 
     /* open output files */
+    //打开输出文件
     ret = open_files(&octx.groups[GROUP_OUTFILE], "output", open_output_file);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_log(NULL, AV_LOG_FATAL, "Error opening output files: ");
         goto fail;
     }
@@ -3296,7 +3317,8 @@ int ffmpeg_parse_options(int argc, char **argv)
 
 fail:
     uninit_parse_context(&octx);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_strerror(ret, error, sizeof(error));
         av_log(NULL, AV_LOG_FATAL, "%s\n", error);
     }

@@ -55,7 +55,8 @@
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 
-enum HWAccelID {
+enum HWAccelID 
+{
     HWACCEL_NONE = 0,
     HWACCEL_AUTO,
     HWACCEL_GENERIC,
@@ -64,21 +65,24 @@ enum HWAccelID {
     HWACCEL_CUVID,
 };
 
-typedef struct HWAccel {
+typedef struct HWAccel 
+{
     const char *name;
     int (*init)(AVCodecContext *s);
     enum HWAccelID id;
     enum AVPixelFormat pix_fmt;
 } HWAccel;
 
-typedef struct HWDevice {
+typedef struct HWDevice 
+{
     char *name;
     enum AVHWDeviceType type;
     AVBufferRef *device_ref;
 } HWDevice;
 
 /* select an input stream for an output stream */
-typedef struct StreamMap {
+typedef struct StreamMap 
+{
     int disabled;           /* 1 is this mapping is disabled by a negative map */
     int file_index;
     int stream_index;
@@ -87,39 +91,42 @@ typedef struct StreamMap {
     char *linklabel;       /* name of an output link, for mapping lavfi outputs */
 } StreamMap;
 
-typedef struct {
+typedef struct 
+{
     int  file_idx,  stream_idx,  channel_idx; // input
     int ofile_idx, ostream_idx;               // output
 } AudioChannelMap;
 
-typedef struct OptionsContext {
+typedef struct OptionsContext 
+{
     OptionGroup *g;
 
     /* input/output options */
-    int64_t start_time;
+    int64_t start_time;     //开始时间
     int64_t start_time_eof;
-    int seek_timestamp;
+    int seek_timestamp;     //seek的时间
     const char *format;
 
-    SpecifierOpt *codec_names;
-    int        nb_codec_names;
-    SpecifierOpt *audio_channels;
+    SpecifierOpt *codec_names;  //编码器的名字
+    int        nb_codec_names;  //编码器名字的数量
+    SpecifierOpt *audio_channels;//音频channel
     int        nb_audio_channels;
-    SpecifierOpt *audio_sample_rate;
+    SpecifierOpt *audio_sample_rate;//音频采样率
     int        nb_audio_sample_rate;
-    SpecifierOpt *frame_rates;
+    SpecifierOpt *frame_rates;//帧率
     int        nb_frame_rates;
-    SpecifierOpt *frame_sizes;
+    SpecifierOpt *frame_sizes;//帧大小
     int        nb_frame_sizes;
-    SpecifierOpt *frame_pix_fmts;
+    SpecifierOpt *frame_pix_fmts;//图片格式
     int        nb_frame_pix_fmts;
 
     /* input options */
+    //输入选项
     int64_t input_ts_offset;
-    int loop;
-    int rate_emu;
-    int accurate_seek;
-    int thread_queue_size;
+    int loop;           //循环
+    int rate_emu;       //读取视频速度
+    int accurate_seek;  //精确的seek
+    int thread_queue_size;//线程队列的大小
 
     SpecifierOpt *ts_scale;
     int        nb_ts_scale;
@@ -149,7 +156,7 @@ typedef struct OptionsContext {
 
     int64_t recording_time;
     int64_t stop_time;
-    uint64_t limit_filesize;
+    uint64_t limit_filesize; //文件大小限制
     float mux_preload;
     float mux_max_delay;
     int shortest;

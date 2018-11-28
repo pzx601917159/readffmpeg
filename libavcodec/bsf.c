@@ -186,12 +186,14 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
     int ret;
 
-    if (!pkt || (!pkt->data && !pkt->side_data_elems)) {
+    if (!pkt || (!pkt->data && !pkt->side_data_elems)) 
+    {
         ctx->internal->eof = 1;
         return 0;
     }
 
-    if (ctx->internal->eof) {
+    if (ctx->internal->eof) 
+    {
         av_log(ctx, AV_LOG_ERROR, "A non-NULL packet sent after an EOF.\n");
         return AVERROR(EINVAL);
     }

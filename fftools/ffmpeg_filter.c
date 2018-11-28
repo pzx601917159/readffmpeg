@@ -350,7 +350,8 @@ int init_complex_filtergraph(FilterGraph *fg)
     for (cur = inputs; cur; cur = cur->next)
         init_input_filter(fg, cur);
 
-    for (cur = outputs; cur;) {
+    for (cur = outputs; cur;) 
+    {
         GROW_ARRAY(fg->outputs, fg->nb_outputs);
         fg->outputs[fg->nb_outputs - 1] = av_mallocz(sizeof(*fg->outputs[0]));
         if (!fg->outputs[fg->nb_outputs - 1])

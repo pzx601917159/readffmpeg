@@ -292,10 +292,10 @@ typedef struct Option {
     const char       *key;
     const char       *val;
 } Option;
-
+//命令行参数组
 typedef struct OptionGroupDef {
     /**< group name */
-    const char *name;
+    const char *name;//group名称
     /**
      * Option to be used as group separator. Can be NULL for groups which
      * are terminated by a non-option argument (e.g. ffmpeg output files)
@@ -337,7 +337,7 @@ typedef struct OptionParseContext {
     OptionGroup global_opts;
 
     OptionGroupList *groups;
-    int           nb_groups;
+    int           nb_groups; //group的数量
 
     /* parsing state */
     OptionGroup cur_group;

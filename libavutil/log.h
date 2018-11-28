@@ -339,11 +339,14 @@ int av_log_format_line2(void *ptr, int level, const char *fmt, va_list vl,
 
 /**
  * Skip repeated messages, this requires the user app to use av_log() instead of
+ * 跳过重复的消息，要求用户使用av_log替换(f)printf,否则会冲突，并且在有些情况下
  * (f)printf as the 2 would otherwise interfere and lead to
  * "Last message repeated x times" messages below (f)printf messages with some
+ * 会出现"last message重复了多少次"这样的消息
  * bad luck.
  * Also to receive the last, "last repeated" line if any, the user app must
  * call av_log(NULL, AV_LOG_QUIET, "%s", ""); at the end
+ * 最后需要调用av_log(NULL, AV_LOG_QUIET, "%s", "")这个函数
  */
 #define AV_LOG_SKIP_REPEATED 1
 

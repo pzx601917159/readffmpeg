@@ -250,7 +250,8 @@ static void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
     wchar_t **argv_w;
     int i, buffsize = 0, offset = 0;
 
-    if (win32_argv_utf8) {
+    if (win32_argv_utf8) 
+    {
         *argc_ptr = win32_argc;
         *argv_ptr = win32_argv_utf8;
         return;
@@ -268,12 +269,14 @@ static void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 
     win32_argv_utf8 = av_mallocz(sizeof(char *) * (win32_argc + 1) + buffsize);
     argstr_flat     = (char *)win32_argv_utf8 + sizeof(char *) * (win32_argc + 1);
-    if (!win32_argv_utf8) {
+    if (!win32_argv_utf8) 
+    {
         LocalFree(argv_w);
         return;
     }
 
-    for (i = 0; i < win32_argc; i++) {
+    for (i = 0; i < win32_argc; i++) 
+    {
         win32_argv_utf8[i] = &argstr_flat[offset];
         offset += WideCharToMultiByte(CP_UTF8, 0, argv_w[i], -1,
                                       &argstr_flat[offset],
@@ -301,7 +304,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
     int *dstcount;
 
-    if (po->flags & OPT_SPEC) {
+    if (po->flags & OPT_SPEC) 
+    {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
         char *str;
@@ -315,26 +319,40 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         dst = &(*so)[*dstcount - 1].u;
     }
 
-    if (po->flags & OPT_STRING) {
+    if (po->flags & OPT_STRING) 
+    {
         char *str;
         str = av_strdup(arg);
         av_freep(dst);
         if (!str)
             return AVERROR(ENOMEM);
         *(char **)dst = str;
-    } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
+    } 
+    else if (po->flags & OPT_BOOL || po->flags & OPT_INT) 
+    {
         *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
-    } else if (po->flags & OPT_INT64) {
+    } 
+    else if (po->flags & OPT_INT64) 
+    {
         *(int64_t *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
-    } else if (po->flags & OPT_TIME) {
+    } 
+    else if (po->flags & OPT_TIME) 
+    {
         *(int64_t *)dst = parse_time_or_die(opt, arg, 1);
-    } else if (po->flags & OPT_FLOAT) {
+    } 
+    else if (po->flags & OPT_FLOAT) 
+    {
         *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
-    } else if (po->flags & OPT_DOUBLE) {
+    } 
+    else if (po->flags & OPT_DOUBLE) 
+    {
         *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
-    } else if (po->u.func_arg) {
+    } 
+    else if (po->u.func_arg) 
+    {
         int ret = po->u.func_arg(optctx, opt, arg);
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             av_log(NULL, AV_LOG_ERROR,
                    "Failed to set value '%s' for option '%s': %s\n",
                    arg, opt, av_err2str(ret));
@@ -423,11 +441,13 @@ int parse_optgroup(void *optctx, OptionGroup *g)
     av_log(NULL, AV_LOG_DEBUG, "Parsing a group of options: %s %s.\n",
            g->group_def->name, g->arg);
 
-    for (i = 0; i < g->nb_opts; i++) {
+    for (i = 0; i < g->nb_opts; i++) 
+    {
         Option *o = &g->opts[i];
 
         if (g->group_def->flags &&
-            !(g->group_def->flags & o->opt->flags)) {
+            !(g->group_def->flags & o->opt->flags)) 
+        {
             av_log(NULL, AV_LOG_ERROR, "Option %s (%s) cannot be applied to "
                    "%s %s -- you are trying to apply an input option to an "
                    "output file or vice versa. Move this option before the "
@@ -449,8 +469,7 @@ int parse_optgroup(void *optctx, OptionGroup *g)
     return 0;
 }
 
-int locate_option(int argc, char **argv, const OptionDef *options,
-                  const char *optname)
+int locate_option(int argc, char **argv, const OptionDef *options, const char *optname)
 {
     const OptionDef *po;
     int i;
@@ -465,7 +484,7 @@ int locate_option(int argc, char **argv, const OptionDef *options,
         po = find_option(options, cur_opt);
         if (!po->name && cur_opt[0] == 'n' && cur_opt[1] == 'o')
             po = find_option(options, cur_opt + 2);
-
+        //返回需要查找的命令行参数的索引值
         if ((!po->name && !strcmp(cur_opt, optname)) ||
              (po->name && !strcmp(optname, po->name)))
             return i;
@@ -508,12 +527,13 @@ static void check_options(const OptionDef *po)
         po++;
     }
 }
-
+//解析日志等级参数
 void parse_loglevel(int argc, char **argv, const OptionDef *options)
 {
+    //获取命令行参数在什么位置
     int idx = locate_option(argc, argv, options, "loglevel");
     const char *env;
-
+    //检查options
     check_options(options);
 
     if (!idx)
@@ -755,7 +775,7 @@ void uninit_parse_context(OptionParseContext *octx)
 
     uninit_opts();
 }
-
+// argv 命令行参数个数，argv命令行参数
 int split_commandline(OptionParseContext *octx, int argc, char *argv[],
                       const OptionDef *options,
                       const OptionGroupDef *groups, int nb_groups)
@@ -764,24 +784,28 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
     int dashdash = -2;
 
     /* perform system-dependent conversions for arguments list */
+    //linux不做任何处理
     prepare_app_arguments(&argc, &argv);
 
     init_parse_context(octx, groups, nb_groups);
     av_log(NULL, AV_LOG_DEBUG, "Splitting the commandline.\n");
 
-    while (optindex < argc) {
+    while (optindex < argc) 
+    {
         const char *opt = argv[optindex++], *arg;
         const OptionDef *po;
         int ret;
 
         av_log(NULL, AV_LOG_DEBUG, "Reading option '%s' ...", opt);
 
-        if (opt[0] == '-' && opt[1] == '-' && !opt[2]) {
+        if (opt[0] == '-' && opt[1] == '-' && !opt[2]) 
+        {
             dashdash = optindex;
             continue;
         }
         /* unnamed group separators, e.g. output filename */
-        if (opt[0] != '-' || !opt[1] || dashdash+1 == optindex) {
+        if (opt[0] != '-' || !opt[1] || dashdash+1 == optindex) 
+        {
             finish_group(octx, 0, opt);
             av_log(NULL, AV_LOG_DEBUG, " matched as %s.\n", groups[0].name);
             continue;
@@ -798,7 +822,8 @@ do {                                                                           \
 } while (0)
 
         /* named group separators, e.g. -i */
-        if ((ret = match_group_separator(groups, nb_groups, opt)) >= 0) {
+        if ((ret = match_group_separator(groups, nb_groups, opt)) >= 0) 
+        {
             GET_ARG(arg);
             finish_group(octx, ret, arg);
             av_log(NULL, AV_LOG_DEBUG, " matched as %s with argument '%s'.\n",
@@ -808,13 +833,19 @@ do {                                                                           \
 
         /* normal options */
         po = find_option(options, opt);
-        if (po->name) {
-            if (po->flags & OPT_EXIT) {
+        if (po->name) 
+        {
+            if (po->flags & OPT_EXIT) 
+            {
                 /* optional argument, e.g. -h */
                 arg = argv[optindex++];
-            } else if (po->flags & HAS_ARG) {
+            } 
+            else if (po->flags & HAS_ARG) 
+            {
                 GET_ARG(arg);
-            } else {
+            } 
+            else 
+            {
                 arg = "1";
             }
 
@@ -825,14 +856,18 @@ do {                                                                           \
         }
 
         /* AVOptions */
-        if (argv[optindex]) {
+        if (argv[optindex]) 
+        {
             ret = opt_default(NULL, opt, argv[optindex]);
-            if (ret >= 0) {
+            if (ret >= 0) 
+            {
                 av_log(NULL, AV_LOG_DEBUG, " matched as AVOption '%s' with "
                        "argument '%s'.\n", opt, argv[optindex]);
                 optindex++;
                 continue;
-            } else if (ret != AVERROR_OPTION_NOT_FOUND) {
+            } 
+            else if (ret != AVERROR_OPTION_NOT_FOUND) 
+            {
                 av_log(NULL, AV_LOG_ERROR, "Error parsing option '%s' "
                        "with argument '%s'.\n", opt, argv[optindex]);
                 return ret;
@@ -842,7 +877,8 @@ do {                                                                           \
         /* boolean -nofoo options */
         if (opt[0] == 'n' && opt[1] == 'o' &&
             (po = find_option(options, opt + 2)) &&
-            po->name && po->flags & OPT_BOOL) {
+            po->name && po->flags & OPT_BOOL) 
+        {
             add_opt(octx, po, opt, "0");
             av_log(NULL, AV_LOG_DEBUG, " matched as option '%s' (%s) with "
                    "argument 0.\n", po->name, po->help);

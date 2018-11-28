@@ -521,7 +521,8 @@ static void dump_argument(const char *a)
 
 static void check_options(const OptionDef *po)
 {
-    while (po->name) {
+    while (po->name) 
+	{
         if (po->flags & OPT_PERFILE)
             av_assert0(po->flags & (OPT_INPUT | OPT_OUTPUT));
         po++;
@@ -541,9 +542,11 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
     if (idx && argv[idx + 1])
         opt_loglevel(NULL, "loglevel", argv[idx + 1]);
     idx = locate_option(argc, argv, options, "report");
-    if ((env = getenv("FFREPORT")) || idx) {
+    if ((env = getenv("FFREPORT")) || idx) 
+	{
         init_report(env);
-        if (report_file) {
+        if (report_file) 
+		{
             int i;
             fprintf(report_file, "Command line:\n");
             for (i = 0; i < argc; i++) {
@@ -909,7 +912,7 @@ int opt_cpuflags(void *optctx, const char *opt, const char *arg)
     av_force_cpu_flags(flags);
     return 0;
 }
-
+//根据命令行参数设置日志等级
 int opt_loglevel(void *optctx, const char *opt, const char *arg)
 {
     const struct { const char *name; int level; } log_levels[] = {

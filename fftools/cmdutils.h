@@ -155,9 +155,11 @@ typedef struct SpecifierOpt {
     } u;
 } SpecifierOpt;
 
-typedef struct OptionDef {
-    const char *name;
-    int flags;
+//参数结构体
+typedef struct OptionDef 
+{
+    const char *name;	//参数名
+    int flags;			//标志位
 #define HAS_ARG    0x0001
 #define OPT_BOOL   0x0002
 #define OPT_EXPERT 0x0004
@@ -180,13 +182,15 @@ typedef struct OptionDef {
 #define OPT_DOUBLE 0x20000
 #define OPT_INPUT  0x40000
 #define OPT_OUTPUT 0x80000
-     union {
+	//联合体，包含函数指针
+    union 
+    {
         void *dst_ptr;
         int (*func_arg)(void *, const char *, const char *);
         size_t off;
     } u;
-    const char *help;
-    const char *argname;
+    const char *help;		//显示帮组信息
+    const char *argname;	//参数值
 } OptionDef;
 
 /**
@@ -211,7 +215,7 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
 #else
 #define CMDUTILS_COMMON_OPTIONS_AVDEVICE
 #endif
-
+//普通的命令行参数
 #define CMDUTILS_COMMON_OPTIONS                                                                                         \
     { "L",           OPT_EXIT,             { .func_arg = show_license },     "show license" },                          \
     { "h",           OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \

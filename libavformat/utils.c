@@ -5039,7 +5039,7 @@ int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
     }
     return AVERROR_PATCHWELCOME;
 }
-
+//TLS相关的初始化
 int avformat_network_init(void)
 {
 #if CONFIG_NETWORK

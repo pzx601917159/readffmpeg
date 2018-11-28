@@ -131,7 +131,7 @@ static void do_video_stats(OutputStream *ost, int frame_size);
 static BenchmarkTimeStamps get_benchmark_time_stamps(void);
 static int64_t getmaxrss(void);
 static int ifilter_has_all_input_formats(FilterGraph *fg);
-
+//是否以守护进程的方式运行
 static int run_as_daemon  = 0;
 static int nb_frames_dup = 0;
 static unsigned dup_warning = 1000;
@@ -4968,17 +4968,21 @@ int main(int argc, char **argv)
 
     if(argc>1 && !strcmp(argv[1], "-d"))
     {
+    	//守护进程方式运行
         run_as_daemon=1;
+		//设置不打印日志
         av_log_set_callback(log_callback_null);
+		//参数减少一个
         argc--;
         argv++;
     }
 
 #if CONFIG_AVDEVICE
+	//avdevice相关注册
     avdevice_register_all();
 #endif
     avformat_network_init();
-
+	//显示标语
     show_banner(argc, argv, options);
 
     /* parse options and open all input/output files */

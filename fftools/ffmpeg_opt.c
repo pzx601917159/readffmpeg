@@ -2092,17 +2092,22 @@ static int open_output_file(OptionsContext *o, const char *filename)
     AVDictionaryEntry *e = NULL;
     int format_flags = 0;
 
-    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
+    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) 
+	{
         o->stop_time = INT64_MAX;
         av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
     }
 
-    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) {
+    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) 
+	{
         int64_t start_time = o->start_time == AV_NOPTS_VALUE ? 0 : o->start_time;
-        if (o->stop_time <= start_time) {
+        if (o->stop_time <= start_time) 
+		{
             av_log(NULL, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
             exit_program(1);
-        } else {
+        } 
+		else 
+		{
             o->recording_time = o->stop_time - start_time;
         }
     }
@@ -2136,25 +2141,30 @@ static int open_output_file(OptionsContext *o, const char *filename)
     oc->interrupt_callback = int_cb;
 
     e = av_dict_get(o->g->format_opts, "fflags", NULL, 0);
-    if (e) {
+    if (e) 
+	{
         const AVOption *o = av_opt_find(oc, "fflags", NULL, 0, 0);
         av_opt_eval_flags(oc, o, e->value, &format_flags);
     }
-    if (o->bitexact) {
+    if (o->bitexact) 
+	{
         format_flags |= AVFMT_FLAG_BITEXACT;
         oc->flags    |= AVFMT_FLAG_BITEXACT;
     }
 
     /* create streams for all unlabeled output pads */
-    for (i = 0; i < nb_filtergraphs; i++) {
+    for (i = 0; i < nb_filtergraphs; i++) 
+	{
         FilterGraph *fg = filtergraphs[i];
-        for (j = 0; j < fg->nb_outputs; j++) {
+        for (j = 0; j < fg->nb_outputs; j++) 
+		{
             OutputFilter *ofilter = fg->outputs[j];
 
             if (!ofilter->out_tmp || ofilter->out_tmp->name)
                 continue;
 
-            switch (ofilter->type) {
+            switch (ofilter->type) 
+			{
             case AVMEDIA_TYPE_VIDEO:    o->video_disable    = 1; break;
             case AVMEDIA_TYPE_AUDIO:    o->audio_disable    = 1; break;
             case AVMEDIA_TYPE_SUBTITLE: o->subtitle_disable = 1; break;
@@ -2163,22 +2173,25 @@ static int open_output_file(OptionsContext *o, const char *filename)
         }
     }
 
-    if (!o->nb_stream_maps) {
+    if (!o->nb_stream_maps) 
+	{
         char *subtitle_codec_name = NULL;
         /* pick the "best" stream of each type */
 
         /* video: highest resolution */
-        if (!o->video_disable && av_guess_codec(oc->oformat, NULL, filename, NULL, AVMEDIA_TYPE_VIDEO) != AV_CODEC_ID_NONE) {
+        if (!o->video_disable && av_guess_codec(oc->oformat, NULL, filename, NULL, AVMEDIA_TYPE_VIDEO) != AV_CODEC_ID_NONE) 
+		{
             int area = 0, idx = -1;
             int qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
-            for (i = 0; i < nb_input_streams; i++) {
+            for (i = 0; i < nb_input_streams; i++) 
+			{
                 int new_area;
                 ist = input_streams[i];
                 new_area = ist->st->codecpar->width * ist->st->codecpar->height + 100000000*!!ist->st->codec_info_nb_frames;
                 if((qcr!=MKTAG('A', 'P', 'I', 'C')) && (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                     new_area = 1;
-                if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                    new_area > area) {
+                if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && new_area > area) 
+                {
                     if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                         continue;
                     area = new_area;
@@ -3343,10 +3356,29 @@ static int opt_progress(void *optctx, const char *opt, const char *arg)
 }
 
 #define OFFSET(x) offsetof(OptionsContext, x)
-const OptionDef options[] = {
+/*
+//参数结构体
+typedef struct OptionDef 
+{
+    const char *name;	//参数名
+    int flags;			//标志位
+	//联合体，包含函数指针
+    union 
+    {
+        void *dst_ptr;
+        int (*func_arg)(void *, const char *, const char *);
+        size_t off;
+    } u;
+    const char *help;		//显示帮组信息
+    const char *argname;	//参数值
+} OptionDef;
+*/
+
+const OptionDef options[] = 
+{
     /* main options */
     CMDUTILS_COMMON_OPTIONS
-    { "f",              HAS_ARG | OPT_STRING | OPT_OFFSET |
+    { "f",             	HAS_ARG | OPT_STRING | OPT_OFFSET |
                         OPT_INPUT | OPT_OUTPUT,                      { .off       = OFFSET(format) },
         "force format", "fmt" },
     { "y",              OPT_BOOL,                                    {              &file_overwrite },

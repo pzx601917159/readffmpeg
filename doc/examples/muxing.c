@@ -457,7 +457,7 @@ static void fill_yuv_image(AVFrame *pict, int frame_index,
         }
     }
 }
-
+//获取视频帧
 static AVFrame *get_video_frame(OutputStream *ost)
 {
     AVCodecContext *c = ost->enc;

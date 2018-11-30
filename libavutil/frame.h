@@ -602,6 +602,9 @@ typedef struct AVFrame {
      * for the target frame's private_ref field.
      */
     AVBufferRef *private_ref;
+
+    //added by pzx for user_data
+    int64_t user_data;
 } AVFrame;
 
 #if FF_API_FRAME_GET_SET

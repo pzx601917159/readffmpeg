@@ -427,9 +427,12 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
 
     got_frame = 0;
 
-    if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME) {
+    if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME) 
+    {
         ret = ff_thread_decode_frame(avctx, frame, &got_frame, pkt);
-    } else {
+    } 
+    else 
+    {   //数据在这里解码,需要知道pkt是从那里获取的
         ret = avctx->codec->decode(avctx, frame, &got_frame, pkt);
 
         if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
@@ -649,18 +652,22 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     if (ret == AVERROR_EOF)
         avci->draining_done = 1;
 
-    if (!ret) {
+    if (!ret) 
+    {
         /* the only case where decode data is not set should be decoders
          * that do not call ff_get_buffer() */
         av_assert0((frame->private_ref && frame->private_ref->size == sizeof(FrameDecodeData)) ||
                    !(avctx->codec->capabilities & AV_CODEC_CAP_DR1));
 
-        if (frame->private_ref) {
+        if (frame->private_ref) 
+        {
             FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
 
-            if (fdd->post_process) {
+            if (fdd->post_process) 
+            {
                 ret = fdd->post_process(avctx, frame);
-                if (ret < 0) {
+                if (ret < 0) 
+                {
                     av_frame_unref(frame);
                     return ret;
                 }

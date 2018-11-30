@@ -449,7 +449,7 @@ static int init_input(AVFormatContext *s, const char *filename,
     return av_probe_input_buffer2(s->pb, &s->iformat, filename,
                                  s, 0, s->format_probesize);
 }
-
+//数据包放入到list中
 int ff_packet_list_put(AVPacketList **packet_buffer,
                        AVPacketList **plast_pktl,
                        AVPacket      *pkt, int flags)
@@ -460,12 +460,16 @@ int ff_packet_list_put(AVPacketList **packet_buffer,
     if (!pktl)
         return AVERROR(ENOMEM);
 
-    if (flags & FF_PACKETLIST_FLAG_REF_PACKET) {
-        if ((ret = av_packet_ref(&pktl->pkt, pkt)) < 0) {
+    if (flags & FF_PACKETLIST_FLAG_REF_PACKET) 
+    {
+        if ((ret = av_packet_ref(&pktl->pkt, pkt)) < 0) 
+        {
             av_free(pktl);
             return ret;
         }
-    } else {
+    } 
+    else 
+    {
         // TODO: Adapt callers in this file so the line below can use
         //       av_packet_move_ref() to effectively move the reference
         //       to the list.
@@ -861,10 +865,12 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i, err;
     AVStream *st;
 
-    for (;;) {
+    for (;;) 
+    {
         AVPacketList *pktl = s->internal->raw_packet_buffer;
 
-        if (pktl) {
+        if (pktl) 
+        {
             *pkt = pktl->pkt;
             st   = s->streams[pkt->stream_index];
             if (s->internal->raw_packet_buffer_remaining_size <= 0)
@@ -881,8 +887,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->data = NULL;
         pkt->size = 0;
         av_init_packet(pkt);
+        //读取packet
         ret = s->iformat->read_packet(s, pkt);
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             /* Some demuxers return FFERROR_REDO when they consume
                data and discard it (ignored streams, junk, extradata).
                We must re-call the demuxer to get the real packet. */
@@ -905,7 +913,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             return err;
 
         if ((s->flags & AVFMT_FLAG_DISCARD_CORRUPT) &&
-            (pkt->flags & AV_PKT_FLAG_CORRUPT)) {
+            (pkt->flags & AV_PKT_FLAG_CORRUPT)) 
+        {
             av_log(s, AV_LOG_WARNING,
                    "Dropped corrupted packet (stream = %d)\n",
                    pkt->stream_index);
@@ -913,14 +922,16 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
         }
 
-        if (pkt->stream_index >= (unsigned)s->nb_streams) {
+        if (pkt->stream_index >= (unsigned)s->nb_streams) 
+        {
             av_log(s, AV_LOG_ERROR, "Invalid stream index %d\n", pkt->stream_index);
             continue;
         }
 
         st = s->streams[pkt->stream_index];
 
-        if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
+        if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) 
+        {
             // correct first time stamps to negative values
             if (!is_relative(st->first_dts))
                 st->first_dts = wrap_timestamp(st, st->first_dts);
@@ -941,7 +952,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (!pktl && st->request_probe <= 0)
             return ret;
-
+        //放入队列中
         err = ff_packet_list_put(&s->internal->raw_packet_buffer,
                                  &s->internal->raw_packet_buffer_end,
                                  pkt, 0);
@@ -1489,6 +1500,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         len = av_parser_parse2(st->parser, st->internal->avctx,
                                &out_pkt.data, &out_pkt.size, data, size,
                                pkt->pts, pkt->dts, pkt->pos);
+        out_pkt.user_data = pkt->user_data;
 
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
         pkt->pos = -1;
@@ -1554,7 +1566,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
             out_pkt.flags |= AV_PKT_FLAG_KEY;
 
         compute_pkt_fields(s, st, st->parser, &out_pkt, next_dts, next_pts);
-
+        //存储数据包到队列中
         ret = ff_packet_list_put(&s->internal->parse_queue,
                                  &s->internal->parse_queue_end,
                                  &out_pkt, 0);
@@ -1602,17 +1614,20 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
     av_init_packet(pkt);
 
-    while (!got_packet && !s->internal->parse_queue) {
+    while (!got_packet && !s->internal->parse_queue) 
+    {
         AVStream *st;
         AVPacket cur_pkt;
 
-        /* read next packet */
+        /* read next packet *///读取数据包
         ret = ff_read_packet(s, &cur_pkt);
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             if (ret == AVERROR(EAGAIN))
                 return ret;
             /* flush the parsers */
-            for (i = 0; i < s->nb_streams; i++) {
+            for (i = 0; i < s->nb_streams; i++) 
+            {
                 st = s->streams[i];
                 if (st->parser && st->need_parsing)
                     parse_packet(s, NULL, st->index);
@@ -1625,15 +1640,18 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         st  = s->streams[cur_pkt.stream_index];
 
         /* update context if required */
-        if (st->internal->need_context_update) {
-            if (avcodec_is_open(st->internal->avctx)) {
+        if (st->internal->need_context_update) 
+        {
+            if (avcodec_is_open(st->internal->avctx)) 
+            {
                 av_log(s, AV_LOG_DEBUG, "Demuxer context update while decoder is open, closing and trying to re-open\n");
                 avcodec_close(st->internal->avctx);
                 st->info->found_decoder = 0;
             }
 
             /* close parser, because it depends on the codec */
-            if (st->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) {
+            if (st->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) 
+            {
                 av_parser_close(st->parser);
                 st->parser = NULL;
             }
@@ -1656,7 +1674,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (cur_pkt.pts != AV_NOPTS_VALUE &&
             cur_pkt.dts != AV_NOPTS_VALUE &&
-            cur_pkt.pts < cur_pkt.dts) {
+            cur_pkt.pts < cur_pkt.dts) 
+        {
             av_log(s, AV_LOG_WARNING,
                    "Invalid timestamps stream=%d, pts=%s, dts=%s, size=%d\n",
                    cur_pkt.stream_index,
@@ -1672,7 +1691,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    av_ts2str(cur_pkt.dts),
                    cur_pkt.size, cur_pkt.duration, cur_pkt.flags);
 
-        if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
+        if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) 
+        {
             st->parser = av_parser_init(st->codecpar->codec_id);
             if (!st->parser) {
                 av_log(s, AV_LOG_VERBOSE, "parser not found for codec "
@@ -1688,7 +1708,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 st->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
         }
 
-        if (!st->need_parsing || !st->parser) {
+        if (!st->need_parsing || !st->parser) 
+        {
             /* no parsing needed: we just output the packet as is */
             *pkt = cur_pkt;
             compute_pkt_fields(s, st, NULL, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
@@ -1699,7 +1720,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                    0, 0, AVINDEX_KEYFRAME);
             }
             got_packet = 1;
-        } else if (st->discard < AVDISCARD_ALL) {
+        } 
+        else if (st->discard < AVDISCARD_ALL) 
+        {
             if ((ret = parse_packet(s, &cur_pkt, cur_pkt.stream_index)) < 0)
                 return ret;
             st->codecpar->sample_rate = st->internal->avctx->sample_rate;
@@ -1792,7 +1815,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     return ret;
 }
-
+//读取数据包
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     const int genpts = s->flags & AVFMT_FLAG_GENPTS;
@@ -1800,7 +1823,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     int ret;
     AVStream *st;
 
-    if (!genpts) {
+    if (!genpts) 
+    {
         ret = s->internal->packet_buffer
               ? ff_packet_list_get(&s->internal->packet_buffer,
                                         &s->internal->packet_buffer_end, pkt)
@@ -1810,33 +1834,41 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
         goto return_packet;
     }
 
-    for (;;) {
+    for (;;) 
+    {
         AVPacketList *pktl = s->internal->packet_buffer;
 
-        if (pktl) {
+        if (pktl) 
+        {
             AVPacket *next_pkt = &pktl->pkt;
 
-            if (next_pkt->dts != AV_NOPTS_VALUE) {
+            if (next_pkt->dts != AV_NOPTS_VALUE) 
+            {
                 int wrap_bits = s->streams[next_pkt->stream_index]->pts_wrap_bits;
                 // last dts seen for this stream. if any of packets following
                 // current one had no dts, we will set this to AV_NOPTS_VALUE.
                 int64_t last_dts = next_pkt->dts;
                 av_assert2(wrap_bits <= 64);
-                while (pktl && next_pkt->pts == AV_NOPTS_VALUE) {
+                while (pktl && next_pkt->pts == AV_NOPTS_VALUE) 
+                {
                     if (pktl->pkt.stream_index == next_pkt->stream_index &&
-                        av_compare_mod(next_pkt->dts, pktl->pkt.dts, 2ULL << (wrap_bits - 1)) < 0) {
-                        if (av_compare_mod(pktl->pkt.pts, pktl->pkt.dts, 2ULL << (wrap_bits - 1))) {
+                        av_compare_mod(next_pkt->dts, pktl->pkt.dts, 2ULL << (wrap_bits - 1)) < 0) 
+                    {
+                        if (av_compare_mod(pktl->pkt.pts, pktl->pkt.dts, 2ULL << (wrap_bits - 1))) 
+                        {
                             // not B-frame
                             next_pkt->pts = pktl->pkt.dts;
                         }
-                        if (last_dts != AV_NOPTS_VALUE) {
+                        if (last_dts != AV_NOPTS_VALUE) 
+                        {
                             // Once last dts was set to AV_NOPTS_VALUE, we don't change it.
                             last_dts = pktl->pkt.dts;
                         }
                     }
                     pktl = pktl->next;
                 }
-                if (eof && next_pkt->pts == AV_NOPTS_VALUE && last_dts != AV_NOPTS_VALUE) {
+                if (eof && next_pkt->pts == AV_NOPTS_VALUE && last_dts != AV_NOPTS_VALUE) 
+                {
                     // Fixing the last reference frame had none pts issue (For MXF etc).
                     // We only do this when
                     // 1. eof.
@@ -1850,7 +1882,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             /* read packet from packet buffer, if there is data */
             st = s->streams[next_pkt->stream_index];
             if (!(next_pkt->pts == AV_NOPTS_VALUE && st->discard < AVDISCARD_ALL &&
-                  next_pkt->dts != AV_NOPTS_VALUE && !eof)) {
+                  next_pkt->dts != AV_NOPTS_VALUE && !eof)) 
+            {
                 ret = ff_packet_list_get(&s->internal->packet_buffer,
                                                &s->internal->packet_buffer_end, pkt);
                 goto return_packet;
@@ -1859,11 +1892,15 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
         ret = read_frame_internal(s, pkt);
         if (ret < 0) {
-            if (pktl && ret != AVERROR(EAGAIN)) {
+            if (pktl && ret != AVERROR(EAGAIN)) 
+            {
                 eof = 1;
                 continue;
-            } else
+            } 
+            else
+            {
                 return ret;
+            }
         }
 
         ret = ff_packet_list_put(&s->internal->packet_buffer,

@@ -1348,6 +1348,7 @@ typedef struct AVFormatContext {
      *
      * Demuxing only, set by avformat_open_input().
      */
+    //只用来解复用
     struct AVInputFormat *iformat;
 
     /**

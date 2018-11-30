@@ -738,6 +738,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
                     memset(buf, 0, sizeof(buf));
                     amf_get_string(ioc, buf, sizeof(buf));
                     g_user_data = strtoll(buf, buf + strlen(buf), 10);
+                    av_log(s, AV_LOG_INFO, "g_user_data %ld\n", g_user_data);
                 }
             }
             avio_rb24(ioc);
@@ -756,6 +757,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
                     memset(buf, 0, sizeof(buf));
                     amf_get_string(ioc, buf, sizeof(buf));
                     g_user_data = strtoll(buf, buf + strlen(buf), 10);
+                    av_log(s, AV_LOG_INFO, "g_user_data %ld\n", g_user_data);
                 }
             }
             avio_rb24(ioc);
@@ -921,7 +923,7 @@ static int amf_skip_tag(AVIOContext *pb, AMFDataType type)
     }
     return 0;
 }
-
+//根本没到这里来
 static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
                            int64_t dts, int64_t next)
 {
@@ -982,6 +984,8 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
 
     pkt->stream_index = st->index;
     pkt->flags       |= AV_PKT_FLAG_KEY;
+    pkt->user_data = g_user_data;
+    av_log(NULL, AV_LOG_INFO, "=====pakcet g_user_data %ld\n", g_user_data);
 
 
 skip:
@@ -1049,68 +1053,90 @@ retry:
         avio_skip(s->pb, 3); /* stream id, always 0 */
         flags = 0;
 
-        if (flv->validate_next < flv->validate_count) {
+        if (flv->validate_next < flv->validate_count) 
+        {
             int64_t validate_pos = flv->validate_index[flv->validate_next].pos;
-            if (pos == validate_pos) {
+            if (pos == validate_pos) 
+            {
                 if (FFABS(dts - flv->validate_index[flv->validate_next].dts) <=
-                    VALIDATE_INDEX_TS_THRESH) {
+                    VALIDATE_INDEX_TS_THRESH) 
+                {
                     flv->validate_next++;
-                } else {
+                } 
+                else 
+                {
                     clear_index_entries(s, validate_pos);
                     flv->validate_count = 0;
                 }
-            } else if (pos > validate_pos) {
+            } 
+            else if (pos > validate_pos) 
+            {
                 clear_index_entries(s, validate_pos);
                 flv->validate_count = 0;
             }
         }
 
-        if (size == 0) {
+        if (size == 0) 
+        {
             ret = FFERROR_REDO;
             goto leave;
         }
 
         next = size + avio_tell(s->pb);
 
-        if (type == FLV_TAG_TYPE_AUDIO) {
+        if (type == FLV_TAG_TYPE_AUDIO) 
+        {
             stream_type = FLV_STREAM_TYPE_AUDIO;
             flags    = avio_r8(s->pb);
             size--;
-        } else if (type == FLV_TAG_TYPE_VIDEO) {
+        } 
+        else if (type == FLV_TAG_TYPE_VIDEO) 
+        {
             stream_type = FLV_STREAM_TYPE_VIDEO;
             flags    = avio_r8(s->pb);
             size--;
             if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
                 goto skip;
-        } else if (type == FLV_TAG_TYPE_META) {
+        } 
+        else if (type == FLV_TAG_TYPE_META) 
+        {
             stream_type=FLV_STREAM_TYPE_DATA;
             if (size > 13 + 1 + 4) { // Header-type metadata stuff
                 int type;
                 meta_pos = avio_tell(s->pb);
                 type = flv_read_metabody(s, next);
-                if (type == 0 && dts == 0 || type < 0 || type == TYPE_UNKNOWN) {
+                if (type == 0 && dts == 0 || type < 0 || type == TYPE_UNKNOWN) 
+                {
                     if (type < 0 && flv->validate_count &&
                         flv->validate_index[0].pos     > next &&
                         flv->validate_index[0].pos - 4 < next
-                    ) {
+                    ) 
+                    {
                         av_log(s, AV_LOG_WARNING, "Adjusting next position due to index mismatch\n");
                         next = flv->validate_index[0].pos - 4;
                     }
                     goto skip;
-                } else if (type == TYPE_ONTEXTDATA) {
+                } 
+                else if (type == TYPE_ONTEXTDATA) 
+                {
                     avpriv_request_sample(s, "OnTextData packet");
                     return flv_data_packet(s, pkt, dts, next);
-                } else if (type == TYPE_ONCAPTION) {
+                } 
+                else if (type == TYPE_ONCAPTION) 
+                {
                     return flv_data_packet(s, pkt, dts, next);
                 }
                 avio_seek(s->pb, meta_pos, SEEK_SET);
             }
-        } else {
+        } 
+        else 
+        {
             av_log(s, AV_LOG_DEBUG,
                    "Skipping flv packet: type %d, size %d, flags %d.\n",
                    type, size, flags);
 skip:
-            if (avio_seek(s->pb, next, SEEK_SET) != next) {
+            if (avio_seek(s->pb, next, SEEK_SET) != next) 
+            {
                  // This can happen if flv_read_metabody above read past
                  // next, on a non-seekable input, and the preceding data has
                  // been flushed out from the IO buffer.
@@ -1122,7 +1148,8 @@ skip:
         }
 
         /* skip empty data packets */
-        if (!size) {
+        if (!size) 
+        {
             ret = FFERROR_REDO;
             goto leave;
         }
@@ -1320,6 +1347,7 @@ retry_duration:
     pkt->pts          = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;
     pkt->pos          = pos;
+    pkt->user_data    = g_user_data;
     if (flv->new_extradata[stream_type]) {
         uint8_t *side = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                                 flv->new_extradata_size[stream_type]);
@@ -1386,7 +1414,7 @@ static const AVClass flv_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
+//flv解码器
 AVInputFormat ff_flv_demuxer = {
     .name           = "flv",
     .long_name      = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
@@ -1406,7 +1434,7 @@ static const AVClass live_flv_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
+//flv解码器
 AVInputFormat ff_live_flv_demuxer = {
     .name           = "live_flv",
     .long_name      = NULL_IF_CONFIG_SMALL("live RTMP FLV (Flash Video)"),

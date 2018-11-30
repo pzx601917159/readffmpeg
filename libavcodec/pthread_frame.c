@@ -469,6 +469,7 @@ static int submit_packet(PerThreadContext *p, AVCodecContext *user_avctx,
     return 0;
 }
 
+//解码数据
 int ff_thread_decode_frame(AVCodecContext *avctx,
                            AVFrame *picture, int *got_picture_ptr,
                            AVPacket *avpkt)
@@ -498,9 +499,11 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     if (fctx->next_decoding > (avctx->thread_count-1-(avctx->codec_id == AV_CODEC_ID_FFV1)))
         fctx->delaying = 0;
 
-    if (fctx->delaying) {
+    if (fctx->delaying) 
+    {
         *got_picture_ptr=0;
-        if (avpkt->size) {
+        if (avpkt->size) 
+        {
             err = avpkt->size;
             goto finish;
         }
@@ -516,7 +519,8 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     do {
         p = &fctx->threads[finished++];
 
-        if (atomic_load(&p->state) != STATE_INPUT_READY) {
+        if (atomic_load(&p->state) != STATE_INPUT_READY) 
+        {
             pthread_mutex_lock(&p->progress_mutex);
             while (atomic_load_explicit(&p->state, memory_order_relaxed) != STATE_INPUT_READY)
                 pthread_cond_wait(&p->output_cond, &p->progress_mutex);
@@ -526,6 +530,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
         av_frame_move_ref(picture, p->frame);
         *got_picture_ptr = p->got_frame;
         picture->pkt_dts = p->avpkt.dts;
+        picture->user_data = p->avpkt.user_data;
         err = p->result;
 
         /*
@@ -542,7 +547,8 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
 
     update_context_from_thread(avctx, p->avctx, 1);
 
-    if (fctx->next_decoding >= avctx->thread_count) fctx->next_decoding = 0;
+    if (fctx->next_decoding >= avctx->thread_count) 
+        fctx->next_decoding = 0;
 
     fctx->next_finished = finished;
 

@@ -137,7 +137,8 @@ typedef struct MyAVPacketList
 } MyAVPacketList;
 
 //音视频队列
-typedef struct PacketQueue {
+typedef struct PacketQueue 
+{
     MyAVPacketList *first_pkt, *last_pkt;
     int nb_packets;
     int size;
@@ -169,7 +170,8 @@ typedef struct AudioParams
 } AudioParams;
 
 //时钟
-typedef struct Clock {
+typedef struct Clock 
+{
     double pts;           /* clock base */
     double pts_drift;     /* clock base minus time at which we updated the clock */
     double last_updated;
@@ -198,7 +200,8 @@ typedef struct Frame
 } Frame;
 
 //帧队列
-typedef struct FrameQueue {
+typedef struct FrameQueue 
+{
     Frame queue[FRAME_QUEUE_SIZE];
     int rindex;
     int windex;
@@ -209,8 +212,6 @@ typedef struct FrameQueue {
     SDL_mutex *mutex;//队列里面包含一个mutex成员
     SDL_cond *cond;//队列里面包含一个cond成员
     PacketQueue *pktq;//videostate的framequeue成员可以的到pakcetqueue成员
-    //added by pzx
-    long g_user_data;
 } FrameQueue;
 
 enum {
@@ -219,7 +220,8 @@ enum {
     AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock *///通过额外的时钟来同步
 };
 //解码器
-typedef struct Decoder {
+typedef struct Decoder 
+{
     AVPacket pkt;               //包
     PacketQueue *queue;         //包队列
     AVCodecContext *avctx;      //解码器上下文
@@ -234,18 +236,19 @@ typedef struct Decoder {
     SDL_Thread *decoder_tid;    //解码线程ID
 } Decoder;
 //视频状态
-typedef struct VideoState {
-    SDL_Thread *read_tid;	    //读取视频的线程
+typedef struct VideoState 
+{
+    SDL_Thread *read_tid;	    //读取视频的线程id
     AVInputFormat *iformat;	    //输入上下文
-    int abort_request;
+    int abort_request;          //退出情趣
     int force_refresh;
-    int paused;
-    int last_paused;
+    int paused;                 //暂停
+    int last_paused;            //上次暂停
     int queue_attachments_req;
-    int seek_req;
-    int seek_flags;
-    int64_t seek_pos;
-    int64_t seek_rel;
+    int seek_req;               //seek请求
+    int seek_flags;             //seek标志
+    int64_t seek_pos;           //seek的位置
+    int64_t seek_rel;           //seek的实际位置
     int read_pause_return;
     AVFormatContext *ic;
     int realtime;
@@ -255,16 +258,16 @@ typedef struct VideoState {
     Clock extclk;
 
     FrameQueue pictq;   //图片的队列
-    FrameQueue subpq;
-    FrameQueue sampq;
+    FrameQueue subpq;   //字幕队列
+    FrameQueue sampq;   //音频队列
 
-    Decoder auddec; //音频解码器
-    Decoder viddec; //视频解码器
-    Decoder subdec; //字幕解码器
+    Decoder auddec;     //音频解码器
+    Decoder viddec;     //视频解码器
+    Decoder subdec;     //字幕解码器
 
     int audio_stream;
 
-    int av_sync_type;
+    int av_sync_type;   //同步方式
 
     double audio_clock;
     int audio_clock_serial;
@@ -282,7 +285,7 @@ typedef struct VideoState {
     int audio_buf_index; /* in bytes */
     int audio_write_buf_size;
     int audio_volume;
-    int muted;//静音
+    int muted;      //静音
     struct AudioParams audio_src;
 #if CONFIG_AVFILTER
     struct AudioParams audio_filter_src;
@@ -633,7 +636,7 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
     d->start_pts = AV_NOPTS_VALUE;
     d->pkt_serial = -1;
 }
-
+//解码视频帧
 static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
     int ret = AVERROR(EAGAIN);
 
@@ -662,6 +665,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                             {
                                 frame->pts = frame->pkt_dts;
                             }
+                            frame->user_data = pkt.user_data;
                         }
                         break;
                     case AVMEDIA_TYPE_AUDIO:
@@ -691,25 +695,34 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
             } while (ret != AVERROR(EAGAIN));
         }
 
-        do {
+        do 
+        {
             if (d->queue->nb_packets == 0)
                 SDL_CondSignal(d->empty_queue_cond);
-            if (d->packet_pending) {
+            if (d->packet_pending) 
+            {
                 av_packet_move_ref(&pkt, &d->pkt);
                 d->packet_pending = 0;
-            } else {
+            } 
+            else 
+            {
                 if (packet_queue_get(d->queue, &pkt, 1, &d->pkt_serial) < 0)
                     return -1;
             }
         } while (d->queue->serial != d->pkt_serial);
+        av_log(NULL, AV_LOG_INFO, "----------send packet user data:%ld", pkt.user_data);
 
-        if (pkt.data == flush_pkt.data) {
+        if (pkt.data == flush_pkt.data) 
+        {
             avcodec_flush_buffers(d->avctx);
             d->finished = 0;
             d->next_pts = d->start_pts;
             d->next_pts_tb = d->start_pts_tb;
-        } else {
-            if (d->avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        } 
+        else 
+        {
+            if (d->avctx->codec_type == AVMEDIA_TYPE_SUBTITLE) 
+            {
                 int got_frame = 0;
                 ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &pkt);
                 if (ret < 0) {
@@ -721,7 +734,11 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                     }
                     ret = got_frame ? 0 : (pkt.data ? AVERROR(EAGAIN) : AVERROR_EOF);
                 }
-            } else {
+            } 
+            else 
+            {
+                av_log(NULL, AV_LOG_INFO, "send packet user data:%ld", pkt.user_data);
+            
                 if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
                     d->packet_pending = 1;
@@ -1049,6 +1066,7 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
 
     vp = frame_queue_peek_last(&is->pictq);
+    av_log(NULL, AV_LOG_INFO, "\nuser data:%ld\n", vp->frame->user_data);
     if (is->subtitle_st) 
     {
         if (frame_queue_nb_remaining(&is->subpq) > 0) 
@@ -1657,7 +1675,7 @@ static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial
 }
 
 /* called to display each frame */
-//现实视频
+//显示视频
 static void video_refresh(void *opaque, double *remaining_time)
 {
     VideoState *is = opaque;
@@ -1860,15 +1878,16 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
     frame_queue_push(&is->pictq);
     return 0;
 }
-
+//获取视频帧
 static int get_video_frame(VideoState *is, AVFrame *frame)
 {
     int got_picture;
-
+    //解码视频帧
     if ((got_picture = decoder_decode_frame(&is->viddec, frame, NULL)) < 0)
         return -1;
 
-    if (got_picture) {
+    if (got_picture) 
+    {
         double dpts = NAN;
 
         if (frame->pts != AV_NOPTS_VALUE)
@@ -1876,13 +1895,16 @@ static int get_video_frame(VideoState *is, AVFrame *frame)
 
         frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
 
-        if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
-            if (frame->pts != AV_NOPTS_VALUE) {
+        if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) 
+        {
+            if (frame->pts != AV_NOPTS_VALUE) 
+            {
                 double diff = dpts - get_master_clock(is);
                 if (!isnan(diff) && fabs(diff) < AV_NOSYNC_THRESHOLD &&
                     diff - is->frame_last_filter_delay < 0 &&
                     is->viddec.pkt_serial == is->vidclk.serial &&
-                    is->videoq.nb_packets) {
+                    is->videoq.nb_packets) 
+                {
                     is->frame_drops_early++;
                     av_frame_unref(frame);
                     got_picture = 0;
@@ -2255,7 +2277,8 @@ static int video_thread(void *arg)
         return AVERROR(ENOMEM);
     }
 
-    for (;;) {
+    for (;;) 
+    {
         //获取视频帧
         ret = get_video_frame(is, frame);
         if (ret < 0)
@@ -2316,10 +2339,13 @@ static int video_thread(void *arg)
                 is->frame_last_filter_delay = 0;
             tb = av_buffersink_get_time_base(filt_out);
 #endif
+            
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
+            //视频帧在这里入队
             ret = queue_picture(is, frame, pts, duration, frame->pkt_pos, is->viddec.pkt_serial);
             av_frame_unref(frame);
+
 #if CONFIG_AVFILTER
             if (is->videoq.serial != is->viddec.pkt_serial)
                 break;

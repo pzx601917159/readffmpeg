@@ -2084,7 +2084,7 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
 
     return 0;
 }
-
+//通过codecparam得到codeccontext
 int avcodec_parameters_to_context(AVCodecContext *codec,
                                   const AVCodecParameters *par)
 {

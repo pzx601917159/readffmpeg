@@ -189,7 +189,7 @@ typedef struct Frame
     AVSubtitle sub;
     int serial;
     double pts;           /* presentation timestamp for the frame */
-    double duration;      /* estimated duration of the frame */
+    double duration;      /* estimated duration of the frame *///这个帧预估的duration
     int64_t pos;          /* byte position of the frame in the input file */
     int width;
     int height;
@@ -1159,7 +1159,7 @@ static inline int compute_mod(int a, int b)
 {
     return a < 0 ? a%b + b : a%b;
 }
-
+//音视频显示
 static void video_audio_display(VideoState *s)
 {
     int i, i_start, x, y1, y, ys, delay, n, nb_display_channels;
@@ -2698,7 +2698,7 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
 }
 
 /* open a given stream. Return 0 if OK */
-//打开stream，成功返回0
+//打开stream，成功返回0//component组成，组件的意思
 static int stream_component_open(VideoState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
@@ -2723,7 +2723,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (ret < 0)
         goto fail;
     avctx->pkt_timebase = ic->streams[stream_index]->time_base;
-
+    //获取解码器
     codec = avcodec_find_decoder(avctx->codec_id);
 
     switch(avctx->codec_type)
@@ -2772,6 +2772,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         av_dict_set_int(&opts, "lowres", stream_lowres, 0);
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO || avctx->codec_type == AVMEDIA_TYPE_AUDIO)
         av_dict_set(&opts, "refcounted_frames", "1", 0);
+    //打开解码器
     if ((ret = avcodec_open2(avctx, codec, &opts)) < 0) 
     {
         goto fail;
@@ -2833,7 +2834,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
         }
-        //音频线程
+        //开启音频线程
         if ((ret = decoder_start(&is->auddec, audio_thread, is)) < 0)
             goto out;
         SDL_PauseAudioDevice(audio_dev, 0);
@@ -3068,23 +3069,27 @@ static int read_thread(void *arg)
 
     /* open the streams */
     //音频
-    if (st_index[AVMEDIA_TYPE_AUDIO] >= 0) {
+    if (st_index[AVMEDIA_TYPE_AUDIO] >= 0) 
+    {
         stream_component_open(is, st_index[AVMEDIA_TYPE_AUDIO]);
     }
 
     ret = -1;
     //视频
-    if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
+    if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) 
+    {
         ret = stream_component_open(is, st_index[AVMEDIA_TYPE_VIDEO]);
     }
     if (is->show_mode == SHOW_MODE_NONE)
         is->show_mode = ret >= 0 ? SHOW_MODE_VIDEO : SHOW_MODE_RDFT;
     //字幕
-    if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) {
+    if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) 
+    {
         stream_component_open(is, st_index[AVMEDIA_TYPE_SUBTITLE]);
     }
 
-    if (is->video_stream < 0 && is->audio_stream < 0) {
+    if (is->video_stream < 0 && is->audio_stream < 0) 
+    {
         av_log(NULL, AV_LOG_FATAL, "Failed to open file '%s' or configure filtergraph\n",
                is->filename);
         ret = -1;

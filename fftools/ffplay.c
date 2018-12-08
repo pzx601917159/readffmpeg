@@ -314,6 +314,7 @@ typedef struct VideoState
     SDL_Texture *vis_texture;
     SDL_Texture *sub_texture;
     SDL_Texture *vid_texture;
+    av_log(NULL, AV_LOG_WARNING, "codec name is '%s'\n", forced_codec_name);
 
     int subtitle_stream;
     AVStream *subtitle_st;
@@ -450,7 +451,7 @@ static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 #endif
-
+//比较音频格式
 static inline
 int cmp_audio_fmts(enum AVSampleFormat fmt1, int64_t channel_count1,
                    enum AVSampleFormat fmt2, int64_t channel_count2)
@@ -597,14 +598,17 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *seria
 
     SDL_LockMutex(q->mutex);
 
-    for (;;) {
-        if (q->abort_request) {
+    for (;;) 
+    {
+        if (q->abort_request) 
+        {
             ret = -1;
             break;
         }
 
         pkt1 = q->first_pkt;
-        if (pkt1) {
+        if (pkt1) 
+        {
             q->first_pkt = pkt1->next;
             if (!q->first_pkt)
                 q->last_pkt = NULL;
@@ -617,10 +621,14 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *seria
             av_free(pkt1);
             ret = 1;
             break;
-        } else if (!block) {
+        } 
+        else if (!block) 
+        {
             ret = 0;
             break;
-        } else {
+        } 
+        else 
+        {
             SDL_CondWait(q->cond, q->mutex);
         }
     }
@@ -628,7 +636,8 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *seria
     return ret;
 }
 
-static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, SDL_cond *empty_queue_cond) {
+static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, SDL_cond *empty_queue_cond) 
+{
     memset(d, 0, sizeof(Decoder));
     d->avctx = avctx;
     d->queue = queue;
@@ -637,7 +646,8 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
     d->pkt_serial = -1;
 }
 //解码视频帧
-static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
+static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) 
+{
     int ret = AVERROR(EAGAIN);
 
     for (;;) 
@@ -677,7 +687,8 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                                 frame->pts = av_rescale_q(frame->pts, d->avctx->pkt_timebase, tb);
                             else if (d->next_pts != AV_NOPTS_VALUE)
                                 frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
-                            if (frame->pts != AV_NOPTS_VALUE) {
+                            if (frame->pts != AV_NOPTS_VALUE) 
+                            {
                                 d->next_pts = frame->pts + frame->nb_samples;
                                 d->next_pts_tb = tb;
                             }
@@ -710,7 +721,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                     return -1;
             }
         } while (d->queue->serial != d->pkt_serial);
-        av_log(NULL, AV_LOG_INFO, "----------send packet user data:%ld", pkt.user_data);
+        //av_log(NULL, AV_LOG_INFO, "----------send packet user data:%ld", pkt.user_data);
 
         if (pkt.data == flush_pkt.data) 
         {
@@ -725,10 +736,14 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
             {
                 int got_frame = 0;
                 ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &pkt);
-                if (ret < 0) {
+                if (ret < 0) 
+                {
                     ret = AVERROR(EAGAIN);
-                } else {
-                    if (got_frame && !pkt.data) {
+                } 
+                else 
+                {
+                    if (got_frame && !pkt.data) 
+                    {
                        d->packet_pending = 1;
                        av_packet_move_ref(&d->pkt, &pkt);
                     }
@@ -737,9 +752,10 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
             } 
             else 
             {
-                av_log(NULL, AV_LOG_INFO, "send packet user data:%ld", pkt.user_data);
-            
-                if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) {
+                //av_log(NULL, AV_LOG_INFO, "send packet user data:%ld", pkt.user_data);
+                //发送数据包解码 
+                if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) 
+                {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
                     d->packet_pending = 1;
                     av_packet_move_ref(&d->pkt, &pkt);
@@ -750,7 +766,8 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
     }
 }
 
-static void decoder_destroy(Decoder *d) {
+static void decoder_destroy(Decoder *d) 
+{
     av_packet_unref(&d->pkt);
     avcodec_free_context(&d->avctx);
 }
@@ -795,7 +812,8 @@ static int frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int 
 static void frame_queue_destory(FrameQueue *f)
 {
     int i;
-    for (i = 0; i < f->max_size; i++) {
+    for (i = 0; i < f->max_size; i++) 
+    {
         Frame *vp = &f->queue[i];
         frame_queue_unref_item(vp);
         av_frame_free(&vp->frame);
@@ -2725,6 +2743,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->pkt_timebase = ic->streams[stream_index]->time_base;
     //获取解码器
     codec = avcodec_find_decoder(avctx->codec_id);
+    av_log(NULL, AV_LOG_WARNING, "codec id is '%d'\n", avctx->codec_id);
 
     switch(avctx->codec_type)
     {
@@ -2741,6 +2760,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             forced_codec_name =    video_codec_name; 
             break;
     }
+    av_log(NULL, AV_LOG_WARNING, "codec name is '%s'\n", forced_codec_name);
     if (forced_codec_name)
         codec = avcodec_find_decoder_by_name(forced_codec_name);
     if (!codec) 

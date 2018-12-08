@@ -295,26 +295,34 @@ static int bsfs_poll(AVCodecContext *avctx, AVPacket *pkt)
 
     /* start with the last filter in the chain */
     idx = s->nb_bsfs - 1;
-    while (idx >= 0) {
+    while (idx >= 0) 
+    {
         /* request a packet from the currently selected filter */
         ret = av_bsf_receive_packet(s->bsfs[idx], pkt);
-        if (ret == AVERROR(EAGAIN)) {
+        if (ret == AVERROR(EAGAIN)) 
+        {
             /* no packets available, try the next filter up the chain */
             ret = 0;
             idx--;
             continue;
-        } else if (ret < 0 && ret != AVERROR_EOF) {
+        } 
+        else if (ret < 0 && ret != AVERROR_EOF) 
+        {
             return ret;
         }
 
         /* got a packet or EOF -- pass it to the caller or to the next filter
          * down the chain */
-        if (idx == s->nb_bsfs - 1) {
+        if (idx == s->nb_bsfs - 1) 
+        {
             return ret;
-        } else {
+        } 
+        else 
+        {
             idx++;
             ret = av_bsf_send_packet(s->bsfs[idx], ret < 0 ? NULL : pkt);
-            if (ret < 0) {
+            if (ret < 0) 
+            {
                 av_log(avctx, AV_LOG_ERROR,
                        "Error pre-processing a packet before decoding\n");
                 av_packet_unref(pkt);
@@ -408,7 +416,8 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
     int got_frame, actual_got_frame;
     int ret;
 
-    if (!pkt->data && !avci->draining) {
+    if (!pkt->data && !avci->draining) 
+    {
         av_packet_unref(pkt);
         ret = ff_decode_get_packet(avctx, pkt);
         if (ret < 0 && ret != AVERROR_EOF)
@@ -696,19 +705,22 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
         return AVERROR(EINVAL);
 
     av_packet_unref(avci->buffer_pkt);
-    if (avpkt && (avpkt->data || avpkt->side_data_elems)) {
+    if (avpkt && (avpkt->data || avpkt->side_data_elems)) 
+    {
         ret = av_packet_ref(avci->buffer_pkt, avpkt);
         if (ret < 0)
             return ret;
     }
 
     ret = av_bsf_send_packet(avci->filter.bsfs[0], avci->buffer_pkt);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_packet_unref(avci->buffer_pkt);
         return ret;
     }
 
-    if (!avci->buffer_frame->buf[0]) {
+    if (!avci->buffer_frame->buf[0]) 
+    {
         ret = decode_receive_frame_internal(avctx, avci->buffer_frame);
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
             return ret;

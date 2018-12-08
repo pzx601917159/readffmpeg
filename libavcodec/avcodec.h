@@ -1419,6 +1419,7 @@ typedef struct AVPacketSideData {
  * @see av_packet_ref
  * @see av_packet_unref
  */
+//存储音视频数据包
 typedef struct AVPacket {
     /**
      * A reference to the reference-counted buffer where the packet data is

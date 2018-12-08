@@ -630,13 +630,18 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
             break;
         }
         return RET_COPY_AGAIN;
-    } else if (ret == BC_STS_SUCCESS) {
+    } 
+    else if (ret == BC_STS_SUCCESS) 
+    {
         int copy_ret = -1;
-        if (output.PoutFlags & BC_POUT_FLAGS_PIB_VALID) {
+        if (output.PoutFlags & BC_POUT_FLAGS_PIB_VALID) 
+        {
             print_frame_info(priv, &output);
 
             copy_ret = copy_frame(avctx, &output, frame, got_frame);
-        } else {
+        } 
+        else 
+        {
             /*
              * An invalid frame has been consumed.
              */
@@ -647,9 +652,13 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
         DtsReleaseOutputBuffs(dev, NULL, FALSE);
 
         return copy_ret;
-    } else if (ret == BC_STS_BUSY) {
+    } 
+    else if (ret == BC_STS_BUSY) 
+    {
         return RET_COPY_AGAIN;
-    } else {
+    } 
+    else 
+    {
         av_log(avctx, AV_LOG_ERROR, "CrystalHD: ProcOutput failed %d\n", ret);
         return RET_ERROR;
     }

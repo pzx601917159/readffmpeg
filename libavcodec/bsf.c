@@ -205,6 +205,7 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
     ret = av_packet_make_refcounted(pkt);
     if (ret < 0)
         return ret;
+    //拷贝数据包
     av_packet_move_ref(ctx->internal->buffer_pkt, pkt);
 
     return 0;

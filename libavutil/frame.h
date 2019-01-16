@@ -289,6 +289,7 @@ typedef struct AVFrame {
     /**
      * number of audio samples (per channel) described by this frame
      */
+    // 音频声道
     int nb_samples;
 
     /**
@@ -396,6 +397,7 @@ typedef struct AVFrame {
     /**
      * Sample rate of the audio data.
      */
+    // 音频采样率
     int sample_rate;
 
     /**

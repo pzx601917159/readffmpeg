@@ -251,6 +251,7 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
         return AVERROR_INVALIDDATA;
 
     user_data = av_malloc(16 + size + 1);
+    memset(user_data, 0, 16+size+1);
     if (!user_data)
         return AVERROR(ENOMEM);
 
@@ -263,6 +264,8 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
         h->x264_build = build;
     if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
         h->x264_build = 67;
+
+    av_log(logctx, AV_LOG_ERROR, "user_data%s", user_data);
 
     av_free(user_data);
     return 0;

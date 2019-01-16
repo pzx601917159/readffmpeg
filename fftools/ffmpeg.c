@@ -111,7 +111,8 @@ const int program_birth_year = 2000;
 
 static FILE *vstats_file;
 
-const char *const forced_keyframes_const_names[] = {
+const char *const forced_keyframes_const_names[] = 
+{
     "n",
     "n_forced",
     "prev_forced_n",
@@ -121,7 +122,8 @@ const char *const forced_keyframes_const_names[] = {
 };
 
 //耗时
-typedef struct BenchmarkTimeStamps {
+typedef struct BenchmarkTimeStamps 
+{
     int64_t real_usec;  //总时间
     int64_t user_usec;  //用户态
     int64_t sys_usec;   //内核态
@@ -196,11 +198,13 @@ static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
     uint8_t *src, *src2;
     int x, y;
 
-    if (r->type != SUBTITLE_BITMAP) {
+    if (r->type != SUBTITLE_BITMAP) 
+    {
         av_log(NULL, AV_LOG_WARNING, "sub2video: non-bitmap subtitle\n");
         return;
     }
-    if (r->x < 0 || r->x + r->w > w || r->y < 0 || r->y + r->h > h) {
+    if (r->x < 0 || r->x + r->w > w || r->y < 0 || r->y + r->h > h) 
+    {
         av_log(NULL, AV_LOG_WARNING, "sub2video: rectangle (%d %d %d %d) overflowing %d %d\n",
             r->x, r->y, r->w, r->h, w, h
         );
@@ -210,7 +214,8 @@ static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
     dst += r->y * dst_linesize + r->x * 4;
     src = r->data[0];
     pal = (uint32_t *)r->data[1];
-    for (y = 0; y < r->h; y++) {
+    for (y = 0; y < r->h; y++) 
+    {
         dst2 = (uint32_t *)dst;
         src2 = src;
         for (x = 0; x < r->w; x++)
@@ -3036,20 +3041,23 @@ static int compare_int64(const void *a, const void *b)
 }
 
 /* open the muxer when all the streams are initialized */
+//打开解复用器当所有的streams初始化完成
 static int check_init_output_file(OutputFile *of, int file_index)
 {
     int ret, i;
 
-    for (i = 0; i < of->ctx->nb_streams; i++) {
+    for (i = 0; i < of->ctx->nb_streams; i++) 
+    {
         OutputStream *ost = output_streams[of->ost_index + i];
         if (!ost->initialized)
             return 0;
     }
 
     of->ctx->interrupt_callback = int_cb;
-
+    // 写format header
     ret = avformat_write_header(of->ctx, &of->opts);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         av_log(NULL, AV_LOG_ERROR,
                "Could not write header for output file #%d "
                "(incorrect codec parameters ?): %s\n",
@@ -3065,14 +3073,16 @@ static int check_init_output_file(OutputFile *of, int file_index)
         print_sdp();
 
     /* flush the muxing queues */
-    for (i = 0; i < of->ctx->nb_streams; i++) {
+    for (i = 0; i < of->ctx->nb_streams; i++) 
+    {
         OutputStream *ost = output_streams[of->ost_index + i];
 
         /* try to improve muxing time_base (only possible if nothing has been written yet) */
         if (!av_fifo_size(ost->muxing_queue))
             ost->mux_timebase = ost->st->time_base;
 
-        while (av_fifo_size(ost->muxing_queue)) {
+        while (av_fifo_size(ost->muxing_queue)) 
+        {
             AVPacket pkt;
             av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
             write_packet(of, &pkt, ost, 1);
@@ -3179,8 +3189,10 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     // copy disposition
     ost->st->disposition = ist->st->disposition;
 
-    if (ist->st->nb_side_data) {
-        for (i = 0; i < ist->st->nb_side_data; i++) {
+    if (ist->st->nb_side_data) 
+    {
+        for (i = 0; i < ist->st->nb_side_data; i++) 
+        {
             const AVPacketSideData *sd_src = &ist->st->side_data[i];
             uint8_t *dst_data;
 
@@ -3191,7 +3203,8 @@ static int init_output_stream_streamcopy(OutputStream *ost)
         }
     }
 
-    if (ost->rotate_overridden) {
+    if (ost->rotate_overridden) 
+    {
         uint8_t *sd = av_stream_new_side_data(ost->st, AV_PKT_DATA_DISPLAYMATRIX,
                                               sizeof(int32_t) * 9);
         if (sd)

@@ -314,7 +314,7 @@ typedef struct VideoState
     SDL_Texture *vis_texture;
     SDL_Texture *sub_texture;
     SDL_Texture *vid_texture;
-    av_log(NULL, AV_LOG_WARNING, "codec name is '%s'\n", forced_codec_name);
+    //av_log(NULL, AV_LOG_WARNING, "codec name is '%s'\n", forced_codec_name);
 
     int subtitle_stream;
     AVStream *subtitle_st;
@@ -1084,7 +1084,7 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
 
     vp = frame_queue_peek_last(&is->pictq);
-    av_log(NULL, AV_LOG_INFO, "\nuser data:%ld\n", vp->frame->user_data);
+    //av_log(NULL, AV_LOG_INFO, "\nuser data:%ld\n", vp->frame->user_data);
     if (is->subtitle_st) 
     {
         if (frame_queue_nb_remaining(&is->subpq) > 0) 

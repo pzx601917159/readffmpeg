@@ -232,7 +232,7 @@ void av_freep(void *arg)
     memcpy(arg, &(void *){ NULL }, sizeof(val));
     av_free(val);
 }
-
+//可以理解为malloc zero
 void *av_mallocz(size_t size)
 {
     void *ptr = av_malloc(size);

@@ -127,7 +127,7 @@ void init_dynload(void)
 }
 
 static void (*program_exit)(int ret);
-
+//注册程序退出时候执行的函数
 void register_exit(void (*cb)(int ret))
 {
     program_exit = cb;
@@ -1122,7 +1122,7 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg)
 #endif
     return 0;
 }
-
+//打印错误信息
 void print_error(const char *filename, int err)
 {
     char errbuf[128];

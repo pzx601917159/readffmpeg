@@ -60,6 +60,7 @@
 
 #include <assert.h>
 
+int64_t g_last_user_data = 0;
 //进程名
 const char program_name[] = "ffplay";
 //出生年
@@ -314,7 +315,7 @@ typedef struct VideoState
     SDL_Texture *vis_texture;
     SDL_Texture *sub_texture;
     SDL_Texture *vid_texture;
-    av_log(NULL, AV_LOG_WARNING, "codec name is '%s'\n", forced_codec_name);
+    //av_log(NULL, AV_LOG_WARNING, "codec name is '%s'\n", forced_codec_name);
 
     int subtitle_stream;
     AVStream *subtitle_st;
@@ -752,8 +753,8 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
             } 
             else 
             {
-                //av_log(NULL, AV_LOG_INFO, "send packet user data:%ld", pkt.user_data);
-                //发送数据包解码 
+                // av_log(NULL, AV_LOG_INFO, "send packet user data:%lu\n", pkt.user_data);
+                // 发送数据包解码 
                 if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) 
                 {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
@@ -1084,7 +1085,6 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
 
     vp = frame_queue_peek_last(&is->pictq);
-    av_log(NULL, AV_LOG_INFO, "\nuser data:%ld\n", vp->frame->user_data);
     if (is->subtitle_st) 
     {
         if (frame_queue_nb_remaining(&is->subpq) > 0) 
@@ -1150,7 +1150,17 @@ static void video_image_display(VideoState *is)
         vp->uploaded = 1;
         vp->flip_v = vp->frame->linesize[0] < 0;
     }
-
+   
+    //av_log(NULL, AV_LOG_ERROR, "user data:%ld\n", vp->frame->user_data);
+    // 这里回调即可
+    //if(g_user_data !=0 &&
+    //        g_user_data != g_last_user_data)
+    if(vp->frame->user_data != 0 &&
+            vp->frame->user_data != g_last_user_data)
+    {
+        g_last_user_data = vp->frame->user_data;
+        av_log(NULL, AV_LOG_ERROR, "user data:%ld\n", vp->frame->user_data);
+    }
     set_sdl_yuv_conversion_mode(vp->frame);
     SDL_RenderCopyEx(renderer, is->vid_texture, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
     set_sdl_yuv_conversion_mode(NULL);
@@ -3147,8 +3157,8 @@ static int read_thread(void *arg)
             int64_t seek_target = is->seek_pos;
             int64_t seek_min    = is->seek_rel > 0 ? seek_target - is->seek_rel + 2: INT64_MIN;
             int64_t seek_max    = is->seek_rel < 0 ? seek_target - is->seek_rel - 2: INT64_MAX;
-// FIXME the +-2 is due to rounding being not done in the correct direction in generation
-//      of the seek_pos/seek_rel variables
+            // FIXME the +-2 is due to rounding being not done in the correct direction in generation
+            //      of the seek_pos/seek_rel variables
             //调用avformat_seek_file实现
             ret = avformat_seek_file(is->ic, -1, seek_min, seek_target, seek_max, is->seek_flags);
             if (ret < 0) 

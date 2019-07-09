@@ -331,6 +331,16 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             break;
         case H264_NAL_SEI:
             ff_h264_sei_decode(&p->sei, &nal.gb, &p->ps, avctx);
+            UserDataContext* user_data_context = s->user_data_context;
+            while(user_data_context != NULL)
+            {
+                if(user_data_context->tid == pthread_self())
+                {
+                    user_data_context->user_data = p->sei.unregistered.user_data;
+                    break;
+                }
+                user_data_context = user_data_context->next;
+            }
             break;
         case H264_NAL_IDR_SLICE:
             s->key_frame = 1;

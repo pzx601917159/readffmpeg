@@ -698,7 +698,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
         case H264_NAL_DPC:
             avpriv_request_sample(avctx, "data partitioning");
             break;
-        case H264_NAL_SEI:
+        case H264_NAL_SEI:  // 解析h264sei
             ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
             h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
             if (avctx->debug & FF_DEBUG_GREEN_MD)
@@ -987,7 +987,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
                                             &h->ps, &h->is_avc, &h->nal_length_size,
                                             avctx->err_recognition, avctx);
     }
-
+    // 解析h264 nalu
     buf_index = decode_nal_units(h, buf, buf_size);
     if (buf_index < 0)
         return AVERROR_INVALIDDATA;

@@ -76,6 +76,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     s->dts_ref_dts_delta    = INT_MIN;
     s->pts_dts_delta        = INT_MIN;
     s->format               = -1;
+    s->user_data_context    = NULL;
 
     return s;
 
@@ -224,6 +225,13 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
 void av_parser_close(AVCodecParserContext *s)
 {
     if (s) {
+        UserDataContext* tmp = NULL;
+        while(s->user_data_context != NULL)
+        {
+            tmp = s->user_data_context;
+            s->user_data_context = s->user_data_context->next;
+            av_free(tmp);
+        }
         if (s->parser->parser_close)
             s->parser->parser_close(s);
         av_freep(&s->priv_data);

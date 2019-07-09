@@ -5048,6 +5048,13 @@ enum AVPictureStructure {
     AV_PICTURE_STRUCTURE_FRAME,        //< coded as frame
 };
 
+typedef struct UserDataContext
+{
+    pthread_t tid;
+    int64_t user_data;
+    struct UserDataContext* next;
+}UserDataContext;
+
 typedef struct AVCodecParserContext {
     void *priv_data;
     struct AVCodecParser *parser;
@@ -5213,6 +5220,9 @@ typedef struct AVCodecParserContext {
      * one returned by a decoder.
      */
     int format;
+
+    UserDataContext * user_data_context;
+
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {

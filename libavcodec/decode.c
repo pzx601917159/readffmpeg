@@ -441,7 +441,7 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
         ret = ff_thread_decode_frame(avctx, frame, &got_frame, pkt);
     } 
     else 
-    {   //数据在这里解码,需要知道pkt是从那里获取的
+    {   // 数据在这里解码,需要知道pkt是从那里获取的
         ret = avctx->codec->decode(avctx, frame, &got_frame, pkt);
 
         if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))

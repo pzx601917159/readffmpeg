@@ -31,6 +31,7 @@
 #include "h264_ps.h"
 #include "h264_sei.h"
 #include "internal.h"
+#include <pthread.h>
 
 #define AVERROR_PS_NOT_FOUND      FFERRTAG(0xF8,'?','P','S')
 
@@ -263,6 +264,17 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
         h->x264_build = build;
     if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
         h->x264_build = 67;
+
+    e = sscanf(user_data + 16, "%ld", &(h->user_data));
+    if(e == 1 && h->user_data > 0)
+    {
+        //av_log(logctx, AV_LOG_ERROR, "sequence:%ld %lu\n", h->user_data, pthread_self());
+        // 通知应用
+    }
+    else
+    {
+        h->user_data = 0;
+    }
 
     av_free(user_data);
     return 0;

@@ -119,6 +119,7 @@ static char *print_format;
 static char *stream_specifier;
 static char *show_data_hash;
 
+
 typedef struct ReadInterval {
     int id;             ///< identifier
     int64_t start, end; ///< start, end in second/AV_TIME_BASE units
@@ -3653,7 +3654,8 @@ int main(int argc, char **argv)
     }
 
     if ((ret = writer_open(&wctx, w, w_args,
-                           sections, FF_ARRAY_ELEMS(sections))) >= 0) {
+                           sections, FF_ARRAY_ELEMS(sections))) >= 0) 
+    {
         if (w == &xml_writer)
             wctx->string_validation_utf8_flags |= AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES;
 
@@ -3668,12 +3670,15 @@ int main(int argc, char **argv)
 
         if (!input_filename &&
             ((do_show_format || do_show_programs || do_show_streams || do_show_chapters || do_show_packets || do_show_error) ||
-             (!do_show_program_version && !do_show_library_versions && !do_show_pixel_formats))) {
+             (!do_show_program_version && !do_show_library_versions && !do_show_pixel_formats))) 
+        {
             show_usage();
             av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
             av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
             ret = AVERROR(EINVAL);
-        } else if (input_filename) {
+        } 
+        else if (input_filename) 
+        {
             ret = probe_file(wctx, input_filename);
             if (ret < 0 && do_show_error)
                 show_error(wctx, ret);
@@ -3695,4 +3700,6 @@ end:
     avformat_network_deinit();
 
     return ret < 0;
+    //printf("g_user_data:%d\n", g_user_data);
+    //return g_user_data;
 }

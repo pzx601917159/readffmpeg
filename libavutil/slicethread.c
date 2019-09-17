@@ -90,7 +90,7 @@ static void *attribute_align_arg thread_worker(void *v)
         }
     }
 }
-
+// 创建解码slice线程
 int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
                               void (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
                               void (*main_func)(void *priv),
@@ -109,6 +109,7 @@ int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
     }
 
     nb_workers = nb_threads;
+    // 线程数减1
     if (!main_func)
         nb_workers--;
 

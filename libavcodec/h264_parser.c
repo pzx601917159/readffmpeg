@@ -235,7 +235,7 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb,
 
 /**
  * Parse NAL units of found picture and decode some basic information.
- *
+ *  解析一些基本的信息
  * @param s parser context.
  * @param avctx codec context.
  * @param buf buffer with field/frame data.
@@ -578,7 +578,7 @@ fail:
     av_freep(&rbsp.rbsp_buffer);
     return -1;
 }
-
+// h264解析
 static int h264_parse(AVCodecParserContext *s,
                       AVCodecContext *avctx,
                       const uint8_t **poutbuf, int *poutbuf_size,
@@ -613,7 +613,7 @@ static int h264_parse(AVCodecParserContext *s,
             h264_find_frame_end(p, &pc->buffer[pc->last_index + next], -next, avctx); // update state
         }
     }
-
+    // 这里也解析sei
     parse_nal_units(s, avctx, buf, buf_size);
 
     if (avctx->framerate.num)

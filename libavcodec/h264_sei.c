@@ -35,6 +35,8 @@
 
 #define AVERROR_PS_NOT_FOUND      FFERRTAG(0xF8,'?','P','S')
 
+extern int64_t g_user_data;
+
 static const uint8_t sei_num_clock_ts_table[9] = {
     1, 1, 1, 2, 2, 3, 3, 2, 3
 };
@@ -268,7 +270,12 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
     e = sscanf(user_data + 16, "%ld", &(h->user_data));
     if(e == 1 && h->user_data > 0)
     {
-        //av_log(logctx, AV_LOG_ERROR, "sequence:%ld %lu\n", h->user_data, pthread_self());
+        /*
+        if(h->user_data != 0 && g_user_data == 0)
+        {
+            g_user_data = h->user_data;
+        }
+        */
         // 通知应用
     }
     else

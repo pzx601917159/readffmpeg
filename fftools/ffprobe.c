@@ -2818,20 +2818,20 @@ static void show_error(WriterContext *w, int err)
     print_str("string", errbuf_ptr);
     writer_print_section_footer(w);
 }
-
+//打开输入文件或者网络流
 static int open_input_file(InputFile *ifile, const char *filename)
 {
     int err, i;
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *t;
     int scan_all_pmts_set = 0;
-
+	//分配fmt_ctx
     fmt_ctx = avformat_alloc_context();
     if (!fmt_ctx) {
         print_error(filename, AVERROR(ENOMEM));
         exit_program(1);
     }
-
+	//判断scan_all_pmts是否存在，不存在则设置
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
         av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
@@ -2844,12 +2844,14 @@ static int open_input_file(InputFile *ifile, const char *filename)
     ifile->fmt_ctx = fmt_ctx;
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
-    if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+    if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) 
+	{
         av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
         return AVERROR_OPTION_NOT_FOUND;
     }
 
     if (find_stream_info) {
+		//设置find_stream_info的选项
         AVDictionary **opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
         int orig_nb_streams = fmt_ctx->nb_streams;
 

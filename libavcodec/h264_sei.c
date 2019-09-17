@@ -254,6 +254,7 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
         return AVERROR_INVALIDDATA;
 
     user_data = av_malloc(16 + size + 1);
+    memset(user_data, 0, 16+size+1);
     if (!user_data)
         return AVERROR(ENOMEM);
 

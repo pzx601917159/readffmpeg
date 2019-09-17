@@ -1103,6 +1103,7 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
 
     vp = frame_queue_peek_last(&is->pictq);
+    //av_log(NULL, AV_LOG_INFO, "\nuser data:%ld\n", vp->frame->user_data);
     if (is->subtitle_st) 
     {
         if (frame_queue_nb_remaining(&is->subpq) > 0) 

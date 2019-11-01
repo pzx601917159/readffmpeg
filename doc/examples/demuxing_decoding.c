@@ -95,10 +95,12 @@ static int decode_packet(int *got_frame, int cached)
                         av_get_pix_fmt_name(frame->format));
                 return -1;
             }
-
+            
+            /*
             printf("video_frame%s n:%d coded_n:%d\n",
                    cached ? "(cached)" : "",
                    video_frame_count++, frame->coded_picture_number);
+                   */
 
             /* copy decoded frame to destination buffer:
              * this is required since rawvideo expects non aligned data */
@@ -108,7 +110,7 @@ static int decode_packet(int *got_frame, int cached)
                           pix_fmt, width, height);
 
             /* write to rawvideo file */
-            fwrite(video_dst_data[0], 1, video_dst_bufsize, video_dst_file);
+            //fwrite(video_dst_data[0], 1, video_dst_bufsize, video_dst_file);
         }
     } 
 	else if (pkt.stream_index == audio_stream_idx) 
@@ -142,7 +144,7 @@ static int decode_packet(int *got_frame, int cached)
              * in these cases.
              * You should use libswresample or libavfilter to convert the frame
              * to packed data. */
-            fwrite(frame->extended_data[0], 1, unpadded_linesize, audio_dst_file);
+            //fwrite(frame->extended_data[0], 1, unpadded_linesize, audio_dst_file);
         }
     }
 
@@ -163,6 +165,7 @@ static int open_codec_context(int *stream_idx,
     AVDictionary *opts = NULL;
 
     ret = av_find_best_stream(fmt_ctx, type, -1, -1, NULL, 0);
+    printf("find best stream valu:%d\n", ret);
     if (ret < 0) {
         fprintf(stderr, "Could not find %s stream in input file '%s'\n",
                 av_get_media_type_string(type), src_filename);
@@ -335,22 +338,26 @@ int main (int argc, char **argv)
     pkt.data = NULL;
     pkt.size = 0;
 
+    /*
     if (video_stream)
         printf("Demuxing video from file '%s' into '%s'\n", src_filename, video_dst_filename);
     if (audio_stream)
         printf("Demuxing audio from file '%s' into '%s'\n", src_filename, audio_dst_filename);
+        */
 
     /* read frames from the file */
     while (av_read_frame(fmt_ctx, &pkt) >= 0) 
 	{
         AVPacket orig_pkt = pkt;
-        do {
-            ret = decode_packet(&got_frame, 0);
-            if (ret < 0)
-                break;
-            pkt.data += ret;
-            pkt.size -= ret;
-        } while (pkt.size > 0);
+        if (pkt.stream_index == video_stream_idx) {
+            do {
+                ret = decode_packet(&got_frame, 0);
+                if (ret < 0)
+                    break;
+                pkt.data += ret;
+                pkt.size -= ret;
+            } while (pkt.size > 0);
+        }
         av_packet_unref(&orig_pkt);
     }
 
@@ -358,8 +365,10 @@ int main (int argc, char **argv)
     pkt.data = NULL;
     pkt.size = 0;
     do {
-        decode_packet(&got_frame, 1);
-    } while (got_frame);
+        if (pkt.stream_index == video_stream_idx) {
+            decode_packet(&got_frame, 1);
+        }
+    }while (got_frame);
 
     printf("Demuxing succeeded.\n");
 

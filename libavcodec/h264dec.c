@@ -596,7 +596,7 @@ static void debug_green_metadata(const H264SEIGreenMetaData *gm, void *logctx)
                    (float)gm->xsd_metric_value/100);
     }
 }
-
+// 解码h264 NALU
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 {
     AVCodecContext *const avctx = h->avctx;
@@ -699,8 +699,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             avpriv_request_sample(avctx, "data partitioning");
             break;
         case H264_NAL_SEI:
+            // 解析h264sei
             ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
-            h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
+            h->has_recovery_point = h->has_recovery_point ||
+                    h->sei.recovery_point.recovery_frame_cnt != -1;
             if (avctx->debug & FF_DEBUG_GREEN_MD)
                 debug_green_metadata(&h->sei.green_metadata, h->avctx);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
@@ -987,7 +989,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
                                             &h->ps, &h->is_avc, &h->nal_length_size,
                                             avctx->err_recognition, avctx);
     }
-
+    // 解析h264 nalu,这里也解析了sei
     buf_index = decode_nal_units(h, buf, buf_size);
     if (buf_index < 0)
         return AVERROR_INVALIDDATA;

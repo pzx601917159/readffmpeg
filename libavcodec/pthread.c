@@ -71,10 +71,10 @@ int ff_thread_init(AVCodecContext *avctx)
 {
     validate_thread_parameters(avctx);
 
-    if (avctx->active_thread_type&FF_THREAD_SLICE)
-        return ff_slice_thread_init(avctx);
-    else if (avctx->active_thread_type&FF_THREAD_FRAME)
-        return ff_frame_thread_init(avctx);
+    if (avctx->active_thread_type & FF_THREAD_SLICE)
+        return ff_slice_thread_init(avctx); // 片级别解码，多个线程同时解码一个视频帧
+    else if (avctx->active_thread_type & FF_THREAD_FRAME)
+        return ff_frame_thread_init(avctx); // 一个视频帧放在一个线程中解码
 
     return 0;
 }

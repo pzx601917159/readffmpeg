@@ -30,6 +30,7 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
@@ -49,9 +50,10 @@
 #include "libswresample/swresample.h"
 
 #if CONFIG_AVFILTER
-# include "libavfilter/avfilter.h"
-# include "libavfilter/buffersink.h"
-# include "libavfilter/buffersrc.h"
+// 滤镜的条件变量
+#include "libavfilter/avfilter.h"
+#include "libavfilter/buffersink.h"
+#include "libavfilter/buffersrc.h"
 #endif
 
 #include <SDL.h>
@@ -61,6 +63,7 @@
 
 #include <assert.h>
 
+int64_t g_last_user_data = 0;
 //进程名
 const char program_name[] = "ffplay";
 //出生年
@@ -141,10 +144,11 @@ typedef struct MyAVPacketList
 //音视频队列
 typedef struct PacketQueue 
 {
-    MyAVPacketList *first_pkt, *last_pkt;
-    int nb_packets;
-    int size;
-    int64_t duration;
+    MyAVPacketList *first_pkt;  // 第一个包
+    MyAVPacketList *last_pkt;   // 最后一个包
+    int nb_packets;             // 包数量
+    int size;                   // 大小
+    int64_t duration;           // 时长
     int abort_request;
     int serial;		// 音频序列,初始化为0，表示是第几个包
     SDL_mutex *mutex;//队列包含mutex成员
@@ -187,33 +191,40 @@ typedef struct Clock
 //存储解码的数据，分配渲染的数据
 typedef struct Frame 
 {
-    AVFrame *frame;
+    AVFrame *frame; // 真正存储数据包的地方
     AVSubtitle sub;
+    // 序列号
     int serial;
+    // pts
     double pts;           /* presentation timestamp for the frame */
+    // duration
     double duration;      /* estimated duration of the frame *///这个帧预估的duration
+    // 在输入文件中的位置
     int64_t pos;          /* byte position of the frame in the input file */
+    // 宽
     int width;
+    // 高
     int height;
+    // 格式
     int format;
     AVRational sar;
     int uploaded;
     int flip_v;
 } Frame;
 
-//帧队列
+// 帧队列
 typedef struct FrameQueue 
 {
-    Frame queue[FRAME_QUEUE_SIZE];//帧数据
+    Frame queue[FRAME_QUEUE_SIZE]; // frame数组
     int rindex;
     int windex;
-    int size;
-    int max_size;
-    int keep_last;
+    int size;           // 当前的大小
+    int max_size;       // 最大的容量
+    int keep_last;      // 保存最后一个
     int rindex_shown;
-    SDL_mutex *mutex;//队列里面包含一个mutex成员
-    SDL_cond *cond;//队列里面包含一个cond成员
-    PacketQueue *pktq;//videostate的framequeue成员可以的到pakcetqueue成员
+    SDL_mutex *mutex;   // 队列里面包含一个mutex成员
+    SDL_cond *cond;     // 队列里面包含一个cond成员
+    PacketQueue *pktq;  // videostate的framequeue成员可以得到pakcetqueue成员
 } FrameQueue;
 
 enum {
@@ -224,18 +235,18 @@ enum {
 //解码器
 typedef struct Decoder 
 {
-    AVPacket pkt;               //包
-    PacketQueue *queue;         //包队列
-    AVCodecContext *avctx;      //解码器上下文
-    int pkt_serial;             //包序列号
-    int finished;               //是否完成
-    int packet_pending;         //包追加
-    SDL_cond *empty_queue_cond; //条件变量
-    int64_t start_pts;          //起始pts
-    AVRational start_pts_tb;    //起始pts
-    int64_t next_pts;           //下一个pts
+    AVPacket pkt;               // 包
+    PacketQueue *queue;         // 包队列
+    AVCodecContext *avctx;      // 解码器上下文
+    int pkt_serial;             // 包序列号
+    int finished;               // 是否完成
+    int packet_pending;         // 包追加
+    SDL_cond *empty_queue_cond; // 条件变量
+    int64_t start_pts;          // 起始pts
+    AVRational start_pts_tb;    // 起始pts
+    int64_t next_pts;           // 下一个pts
     AVRational next_pts_tb;
-    SDL_Thread *decoder_tid;    //解码线程ID
+    SDL_Thread *decoder_tid;    // 解码线程ID
 } Decoder;
 
 //视频状态
@@ -245,13 +256,13 @@ typedef struct VideoState
     AVInputFormat *iformat;	    //输入上下文
     int abort_request;          //退出请求
     int force_refresh;
-    int paused;                 //暂停
-    int last_paused;            //上次暂停
+    int paused;                 // 暂停
+    int last_paused;            // 上次暂停
     int queue_attachments_req;
-    int seek_req;               //seek请求
-    int seek_flags;             //seek标志
-    int64_t seek_pos;           //seek的位置
-    int64_t seek_rel;           //seek的实际位置
+    int seek_req;               // seek请求
+    int seek_flags;             // seek标志
+    int64_t seek_pos;           // seek的位置
+    int64_t seek_rel;           // seek的实际位置
     int read_pause_return;
     AVFormatContext *ic;
     int realtime;
@@ -260,13 +271,13 @@ typedef struct VideoState
     Clock vidclk;		// 视频时钟
     Clock extclk;		// 额外的clock
 
-    FrameQueue pictq;   //图片的队列
-    FrameQueue subpq;   //字幕队列
-    FrameQueue sampq;   //音频队列
+    FrameQueue pictq;   // 图片的队列
+    FrameQueue subpq;   // 字幕队列
+    FrameQueue sampq;   // 音频队列
 
-    Decoder auddec;     //音频解码器
-    Decoder viddec;     //视频解码器
-    Decoder subdec;     //字幕解码器
+    Decoder auddec;     // 音频解码器
+    Decoder viddec;     // 视频解码器
+    Decoder subdec;     // 字幕解码器
 
     int audio_stream;
 
@@ -287,8 +298,8 @@ typedef struct VideoState
     unsigned int audio_buf1_size;
     int audio_buf_index; /* in bytes */
     int audio_write_buf_size;
-    int audio_volume;
-    int muted;      //静音
+    int audio_volume;       // 音量
+    int muted;              // 静音
     struct AudioParams audio_src;
 #if CONFIG_AVFILTER
     struct AudioParams audio_filter_src;
@@ -335,10 +346,14 @@ typedef struct VideoState
     int eof;
 
     char *filename;
-    int width, height, xleft, ytop;
+    int width;
+    int height;
+    int xleft;  // x轴靠左
+    int ytop;   // y轴靠上
     int step;
 
 #if CONFIG_AVFILTER	//使用filter，音视频输入输出滤镜
+
     int vfilter_idx;
     AVFilterContext *in_video_filter;   // the first filter in the video chain
     AVFilterContext *out_video_filter;  // the last filter in the video chain
@@ -348,7 +363,7 @@ typedef struct VideoState
 #endif
 
     int last_video_stream, last_audio_stream, last_subtitle_stream;
-
+    // 读取线程的条件变量
     SDL_cond *continue_read_thread;
 } VideoState;
 
@@ -517,7 +532,7 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
 
     return ret;
 }
-
+// 放入一个空的数据包
 static int packet_queue_put_nullpacket(PacketQueue *q, int stream_index)
 {
     AVPacket pkt1, *pkt = &pkt1;
@@ -529,7 +544,7 @@ static int packet_queue_put_nullpacket(PacketQueue *q, int stream_index)
 }
 
 /* packet queue handling */
-//packet队列初始化
+// packet队列初始化
 static int packet_queue_init(PacketQueue *q)
 {
     memset(q, 0, sizeof(PacketQueue));
@@ -638,7 +653,7 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *seria
     SDL_UnlockMutex(q->mutex);
     return ret;
 }
-
+// 解码器初始化
 static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, SDL_cond *empty_queue_cond) 
 {
     memset(d, 0, sizeof(Decoder));
@@ -648,7 +663,8 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
     d->start_pts = AV_NOPTS_VALUE;
     d->pkt_serial = -1;
 }
-//解码视频帧
+
+// 解码视频帧
 static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) 
 {
     int ret = AVERROR(EAGAIN);
@@ -656,7 +672,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
     for (;;) 
     {
         AVPacket pkt;
-
+        // 如果两个序列号相等,表示需要接收数据包
         if (d->queue->serial == d->pkt_serial) 
         {
             do 
@@ -720,6 +736,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
             } 
             else 
             {
+                // 获取数据包
                 if (packet_queue_get(d->queue, &pkt, 1, &d->pkt_serial) < 0)
                     return -1;
             }
@@ -755,8 +772,8 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
             } 
             else 
             {
-                //av_log(NULL, AV_LOG_INFO, "send packet user data:%ld", pkt.user_data);
-                //发送数据包解码 
+                // av_log(NULL, AV_LOG_INFO, "send packet user data:%lu\n", pkt.user_data);
+                // 发送数据包解码 
                 if (avcodec_send_packet(d->avctx, &pkt) == AVERROR(EAGAIN)) 
                 {
                     av_log(d->avctx, AV_LOG_ERROR, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
@@ -780,12 +797,13 @@ static void frame_queue_unref_item(Frame *vp)
     av_frame_unref(vp->frame);
     avsubtitle_free(&vp->sub);
 }
-//初始化成员，分配内存
+
+// 初始化成员，分配内存
 static int frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int keep_last)
 {
     int i;
     memset(f, 0, sizeof(FrameQueue));
-	//创建mutex
+	// 创建mutex
     if (!(f->mutex = SDL_CreateMutex())) 
 	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
@@ -797,15 +815,16 @@ static int frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int 
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
         return AVERROR(ENOMEM);
     }
-	//对应的packet队列
+	// 对应的packet队列
     f->pktq = pktq;
 	//最大的大小
-    f->max_size = FFMIN(max_size, FRAME_QUEUE_SIZE);
+    f->max_size = FFMIN(max_size, FRAME_QUEUE_SIZE);    // 队列的最大长度
 	//保存最后一个
     f->keep_last = !!keep_last;
 	//为frame分配内存
     for (i = 0; i < f->max_size; i++)
     {
+        // 分配内存
         if (!(f->queue[i].frame = av_frame_alloc()))
             return AVERROR(ENOMEM);
     }
@@ -1156,7 +1175,17 @@ static void video_image_display(VideoState *is)
         vp->uploaded = 1;
         vp->flip_v = vp->frame->linesize[0] < 0;
     }
-
+   
+    //av_log(NULL, AV_LOG_ERROR, "user data:%ld\n", vp->frame->user_data);
+    // 这里回调即可
+    //if(g_user_data !=0 &&
+    //        g_user_data != g_last_user_data)
+    if(vp->frame->user_data != 0 &&
+            vp->frame->user_data != g_last_user_data)
+    {
+        g_last_user_data = vp->frame->user_data;
+        av_log(NULL, AV_LOG_ERROR, "user data:%ld\n", vp->frame->user_data);
+    }
     set_sdl_yuv_conversion_mode(vp->frame);
     SDL_RenderCopyEx(renderer, is->vid_texture, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
     set_sdl_yuv_conversion_mode(NULL);
@@ -1526,8 +1555,10 @@ static double get_clock(Clock *c)
 static void set_clock_at(Clock *c, double pts, int serial, double time)//最后一个time表示当前时间
 {
     c->pts = pts;
+
     c->last_updated = time;//上次更新的时间为当前的时间
     c->pts_drift = c->pts - time;//pts和当前时间的时间差
+
     c->serial = serial;
 }
 
@@ -1962,7 +1993,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
     frame_queue_push(&is->pictq);
     return 0;
 }
-//获取视频帧
+// 获取视频帧
 static int get_video_frame(VideoState *is, AVFrame *frame)
 {
     int got_picture;
@@ -2319,8 +2350,22 @@ static int audio_thread(void *arg)
 static int decoder_start(Decoder *d, int (*fn)(void *), void *arg)
 {
     packet_queue_start(d->queue);
+    char *str = NULL;
+    if(d->avctx->codec_type == AVMEDIA_TYPE_VIDEO)
+    {
+        str = "video_decoder";
+    }
+    else if(d->avctx->codec_type == AVMEDIA_TYPE_AUDIO)
+    {
+        str = "audio_decoder";
+    }
+    else
+    {
+        str = "decoder";
+    }
     //创建线程
-    d->decoder_tid = SDL_CreateThread(fn, "decoder", arg);
+    //d->decoder_tid = SDL_CreateThread(fn, "decoder", arg);
+    d->decoder_tid = SDL_CreateThread(fn, str, arg);
     if (!d->decoder_tid) 
     {
         av_log(NULL, AV_LOG_ERROR, "SDL_CreateThread(): %s\n", SDL_GetError());
@@ -2829,7 +2874,7 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
 }
 
 /* open a given stream. Return 0 if OK */
-//打开stream，成功返回0//component组成，组件的意思
+// 打开stream，成功返回0//component组成，组件的意思，第一次调用stream_component_open就初始化了读线程的数量
 static int stream_component_open(VideoState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
@@ -2854,9 +2899,8 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (ret < 0)
         goto fail;
     avctx->pkt_timebase = ic->streams[stream_index]->time_base;
-    //获取解码器
+    // 获取解码器
     codec = avcodec_find_decoder(avctx->codec_id);
-    av_log(NULL, AV_LOG_WARNING, "codec id is '%d'\n", avctx->codec_id);
 
     switch(avctx->codec_type)
     {
@@ -2873,9 +2917,10 @@ static int stream_component_open(VideoState *is, int stream_index)
             forced_codec_name =    video_codec_name; 
             break;
     }
-    av_log(NULL, AV_LOG_WARNING, "codec name is '%s'\n", forced_codec_name);
     if (forced_codec_name)
+    {
         codec = avcodec_find_decoder_by_name(forced_codec_name);
+    }
     if (!codec) 
     {
         if (forced_codec_name) 
@@ -2930,7 +2975,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->audio_filter_src.channels       = avctx->channels;
             is->audio_filter_src.channel_layout = get_valid_channel_layout(avctx->channel_layout, avctx->channels);
             is->audio_filter_src.fmt            = avctx->sample_fmt;
-            if ((ret = configure_audio_filters(is, afilters, 0)) < 0)
+            if ((ret = configure_audio_filters(is, afilters, 0)) < 0)   // 这里创建了四个线程
                 goto fail;
             sink = is->out_audio_filter;
             sample_rate    = av_buffersink_get_sample_rate(sink);
@@ -2967,7 +3012,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
         }
-        //开启音频线程
+        // 开启音频线程
         if ((ret = decoder_start(&is->auddec, audio_thread, is)) < 0)
             goto out;
         SDL_PauseAudioDevice(audio_dev, 0);
@@ -3034,19 +3079,20 @@ static int is_realtime(AVFormatContext *s)
 }
 
 /* this thread gets the stream from the disk or the network */
-//这个线程用来读取硬盘或者网络上的数据
+// 这个线程用来读取硬盘或者网络上的数据
+// 把数据放到videoq audioq subtitleq队列中
 static int read_thread(void *arg)
 {
     VideoState *is = arg;
     AVFormatContext *ic = NULL;
     int err, i, ret;
-    int st_index[AVMEDIA_TYPE_NB];
+    int st_index[AVMEDIA_TYPE_NB];  // stream index
 	//创建packet
     AVPacket pkt1, *pkt = &pkt1;
     int64_t stream_start_time;
     int pkt_in_play_range = 0;
     AVDictionaryEntry *t;
-	//创建mutex
+	// 创建mutex
     SDL_mutex *wait_mutex = SDL_CreateMutex();
     int scan_all_pmts_set = 0;
     int64_t pkt_ts;
@@ -3058,14 +3104,14 @@ static int read_thread(void *arg)
         goto fail;
     }
 
-	//st_index初始化为-1
+	// st_index初始化为-1
     memset(st_index, -1, sizeof(st_index));
-	//初始化为-1
+	// 初始化为-1
     is->last_video_stream = is->video_stream = -1;
     is->last_audio_stream = is->audio_stream = -1;
     is->last_subtitle_stream = is->subtitle_stream = -1;
     is->eof = 0;
-	//分配avformat_context
+	// 分配avformat_context
     ic = avformat_alloc_context();
     if (!ic) 
 	{
@@ -3073,16 +3119,16 @@ static int read_thread(void *arg)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-	//阻塞io中断的回调
+	// 阻塞io中断的回调
     ic->interrupt_callback.callback = decode_interrupt_cb;
-	//回调的参数
+	// 回调的参数
     ic->interrupt_callback.opaque = is;
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) 
 	{
         av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
     }
-	//打开输入
+	// 打开输入
     err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
     if (err < 0) 
 	{
@@ -3102,7 +3148,7 @@ static int read_thread(void *arg)
 
     if (genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
-    //注入全局的数据
+    // 注入全局的数据
     av_format_inject_global_side_data(ic);
 
     if (find_stream_info) 
@@ -3146,7 +3192,8 @@ static int read_thread(void *arg)
         if (ic->start_time != AV_NOPTS_VALUE)
             timestamp += ic->start_time;
         ret = avformat_seek_file(ic, -1, INT64_MIN, timestamp, INT64_MAX, 0);
-        if (ret < 0) {
+        if (ret < 0)
+        {
             av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
                     is->filename, (double)timestamp / AV_TIME_BASE);
         }
@@ -3154,19 +3201,26 @@ static int read_thread(void *arg)
 
     is->realtime = is_realtime(ic);
 
-    if (show_status)
-        av_dump_format(ic, 0, is->filename, 0);
+    //if (show_status)
+    //    av_dump_format(ic, 0, is->filename, 0);
 
-    for (i = 0; i < ic->nb_streams; i++) {
+    for (i = 0; i < ic->nb_streams; i++)
+    {
         AVStream *st = ic->streams[i];
         enum AVMediaType type = st->codecpar->codec_type;
         st->discard = AVDISCARD_ALL;
         if (type >= 0 && wanted_stream_spec[type] && st_index[type] == -1)
+        {
             if (avformat_match_stream_specifier(ic, st, wanted_stream_spec[type]) > 0)
-                st_index[type] = i;
+            {
+                st_index[type] = i; // 把index存储下来
+            }
+        }
     }
-    for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
-        if (wanted_stream_spec[i] && st_index[i] == -1) {
+    for (i = 0; i < AVMEDIA_TYPE_NB; i++) 
+    {
+        if (wanted_stream_spec[i] && st_index[i] == -1) 
+        {
             av_log(NULL, AV_LOG_ERROR, "Stream specifier %s does not match any %s stream\n", wanted_stream_spec[i], av_get_media_type_string(i));
             st_index[i] = INT_MAX;
         }
@@ -3201,21 +3255,21 @@ static int read_thread(void *arg)
     }
 
     /* open the streams */
-    //音频
+    // 音频
     if (st_index[AVMEDIA_TYPE_AUDIO] >= 0) 
     {
         stream_component_open(is, st_index[AVMEDIA_TYPE_AUDIO]);
     }
 
     ret = -1;
-    //视频
+    // 视频
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) 
     {
         ret = stream_component_open(is, st_index[AVMEDIA_TYPE_VIDEO]);
     }
     if (is->show_mode == SHOW_MODE_NONE)
         is->show_mode = ret >= 0 ? SHOW_MODE_VIDEO : SHOW_MODE_RDFT;
-    //字幕
+    // 字幕
     if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) 
     {
         stream_component_open(is, st_index[AVMEDIA_TYPE_SUBTITLE]);
@@ -3231,7 +3285,7 @@ static int read_thread(void *arg)
 
     if (infinite_buffer < 0 && is->realtime)
         infinite_buffer = 1;
-
+    // 读取数据线程的主循环
     for (;;)
     {
         if (is->abort_request)
@@ -3247,7 +3301,8 @@ static int read_thread(void *arg)
 #if CONFIG_RTSP_DEMUXER || CONFIG_MMSH_PROTOCOL
         if (is->paused &&
                 (!strcmp(ic->iformat->name, "rtsp") ||
-                 (ic->pb && !strncmp(input_filename, "mmsh:", 5)))) {
+                 (ic->pb && !strncmp(input_filename, "mmsh:", 5)))) 
+        {
             /* wait 10 ms to avoid trying to get another packet */
             /* XXX: horrible */
             SDL_Delay(10);
@@ -3260,8 +3315,8 @@ static int read_thread(void *arg)
             int64_t seek_target = is->seek_pos;
             int64_t seek_min    = is->seek_rel > 0 ? seek_target - is->seek_rel + 2: INT64_MIN;
             int64_t seek_max    = is->seek_rel < 0 ? seek_target - is->seek_rel - 2: INT64_MAX;
-// FIXME the +-2 is due to rounding being not done in the correct direction in generation
-//      of the seek_pos/seek_rel variables
+            // FIXME the +-2 is due to rounding being not done in the correct direction in generation
+            //      of the seek_pos/seek_rel variables
             //调用avformat_seek_file实现
             ret = avformat_seek_file(is->ic, -1, seek_min, seek_target, seek_max, is->seek_flags);
             if (ret < 0) 
@@ -3315,7 +3370,9 @@ static int read_thread(void *arg)
         }
 
         /* if the queue are full, no need to read more */
-		// 读取数据包
+
+        // 如果队列满了则不需要读取更多数据包
+
         if (infinite_buffer<1 &&
               (is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE
             || (stream_has_enough_packets(is->audio_st, is->audio_stream, &is->audioq) &&
@@ -3342,10 +3399,11 @@ static int read_thread(void *arg)
                 goto fail;
             }
         }
-        //读取数据
+        // 读取数据,应该叫av_read_packet
         ret = av_read_frame(ic, pkt);
         if (ret < 0) 
         {
+            // 出错则放入一个空的数据包
             if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !is->eof) 
             {
                 if (is->video_stream >= 0)
@@ -3410,58 +3468,68 @@ static int read_thread(void *arg)
     return 0;
 }
 
-//打开文件或网络流,这里的iformat为static的指针，为空
+// 打开文件或网络流,这里的iformat为static的指针，为空
 static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 {
     VideoState *is;
-	//分配videostate对象
+	// 为VideoState分配内存
     is = av_mallocz(sizeof(VideoState));
     if (!is)
     {
         return NULL;
     }
-	//重新分配内存拷贝filename
+	// 重新分配内存拷贝filename
     is->filename = av_strdup(filename);
     if (!is->filename)
+    {
         goto fail;
+    }
     is->iformat = iformat;
     is->ytop    = 0;
     is->xleft   = 0;
 
     /* start video display */
-	//开始显示视频
-	//初始化图片队列
-	//is下的framequeue的packetqueue成员指向is下的packetqueue
+	// 开始显示视频
+	// 初始化图片队列
+	// is下的framequeue的packetqueue成员指向is下的packetqueue
     if (frame_queue_init(&is->pictq, &is->videoq, VIDEO_PICTURE_QUEUE_SIZE, 1) < 0)
+    {
         goto fail;
-	//初始化字幕队列
+    }
+	// 初始化字幕队列
     if (frame_queue_init(&is->subpq, &is->subtitleq, SUBPICTURE_QUEUE_SIZE, 0) < 0)
+    {
         goto fail;
-	//初始化音频队列
+    }
+	// 初始化音频队列
     if (frame_queue_init(&is->sampq, &is->audioq, SAMPLE_QUEUE_SIZE, 1) < 0)
+    {
         goto fail;
-	//初始化paket，视频，音频和字幕
+    }
+	// 初始化paket，视频，音频和字幕,在这里初始化
     if (packet_queue_init(&is->videoq) < 0 ||
         packet_queue_init(&is->audioq) < 0 ||
         packet_queue_init(&is->subtitleq) < 0)
         goto fail;
 
-	//创建线程
+	// 创建条件变量
     if (!(is->continue_read_thread = SDL_CreateCond())) 
 	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
         goto fail;
     }
-	//初始化lock
+
+	// 初始化lock
     init_clock(&is->vidclk, &is->videoq.serial);
 	//初始化音频clock
     init_clock(&is->audclk, &is->audioq.serial);
     init_clock(&is->extclk, &is->extclk.serial);
-    is->audio_clock_serial = -1;//序列号为-1
+    is->audio_clock_serial = -1;    // 音频的序列号设置为-1
     if (startup_volume < 0)
         av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume);
     if (startup_volume > 100)
         av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", startup_volume);
+
 	//规定范围内最接近startup_volume的值
     startup_volume = av_clip(startup_volume, 0, 100);
     startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
@@ -3469,10 +3537,10 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->audio_volume = startup_volume;
 	//是否静音
     is->muted = 0;
-	//音视频同步方法
+	//音视频同步方法,以音频/视频/外部时钟为基准
     is->av_sync_type = av_sync_type;
 	//创建读取数据的线程
-    is->read_tid     = SDL_CreateThread(read_thread, "read_thread", is);
+    is->read_tid     = SDL_CreateThread(read_thread, "rea_thread", is);
     if (!is->read_tid) 
 	{
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateThread(): %s\n", SDL_GetError());
@@ -3630,6 +3698,7 @@ static void event_loop(VideoState *cur_stream)
 {
     SDL_Event event;
     double incr, pos, frac;
+
 
     for (;;) 
 	{
@@ -3832,6 +3901,7 @@ static void event_loop(VideoState *cur_stream)
             break;
         }
     }
+    */
 }
 
 static int opt_frame_size(void *optctx, const char *opt, const char *arg)
@@ -4043,31 +4113,34 @@ void show_help_default(const char *opt, const char *arg)
 //入口函数
 int main(int argc, char **argv)
 {
+    //close(2);
     int flags;
-	//全局的状态
+	// 全局的状态
     VideoState *is;
-	//只有windows下调用
+	// 只有windows下调用
     init_dynload();
-	//设置log的标志
+	// 设置log的标志
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
-	//解析log等级
+	// 解析log等级
     parse_loglevel(argc, argv, options);
 
     /* register all codecs, demux and protocols */
+    // 注册所有的codecs，demux和protocols
 #if CONFIG_AVDEVICE
     avdevice_register_all();
 #endif
+    // 包含openssl的初始化
     avformat_network_init();
 
     init_opts();
-	//设置信号处理函数
+	// 设置信号处理函数
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).    */
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
-	//显示banner
-    show_banner(argc, argv, options);
-	//获取filename
+	// 显示banner
+    // show_banner(argc, argv, options);
+	// 获取filename,解析命令行参数
     parse_options(NULL, argc, argv, options, opt_input_file);
-	//如果输入文件名为空则直接退出
+	// 如果输入文件名为空则直接退出
     if (!input_filename) 
 	{
         show_usage();
@@ -4078,6 +4151,7 @@ int main(int argc, char **argv)
     }
 
     if (display_disable)
+
 	{
         video_disable = 1;
     }
@@ -4099,15 +4173,18 @@ int main(int argc, char **argv)
     {
         flags &= ~SDL_INIT_VIDEO;
     }
+
     if (SDL_Init (flags)) 
 	{
+
         av_log(NULL, AV_LOG_FATAL, "Could not initialize SDL - %s\n", SDL_GetError());
         av_log(NULL, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
-	//忽略SDL的事件
-    SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
-    SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
+    */
+	// 忽略SDL的事件
+    //SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
+    //SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
 
 	//初始化packet
     av_init_packet(&flush_pkt);
@@ -4142,21 +4219,22 @@ int main(int argc, char **argv)
                     av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
             }
         }
-        if (!window || !renderer || !renderer_info.num_texture_formats) {
+        if (!window || !renderer || !renderer_info.num_texture_formats) 
+        {
             av_log(NULL, AV_LOG_FATAL, "Failed to create window or renderer: %s", SDL_GetError());
             do_exit(NULL);
         }
     }
+    */
 	// 打开流或者文件
     is = stream_open(input_filename, file_iformat);
     if (!is) {
         av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
         do_exit(NULL);
     }
-	//事件循环
+	// 事件循环
     event_loop(is);
 
     /* never returns */
-
     return 0;
 }

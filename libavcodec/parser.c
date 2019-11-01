@@ -76,6 +76,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     s->dts_ref_dts_delta    = INT_MIN;
     s->pts_dts_delta        = INT_MIN;
     s->format               = -1;
+    s->user_data_context    = NULL;
 
     return s;
 
@@ -162,7 +163,7 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
         s->last_pos        = s->pos;
         ff_fetch_timestamp(s, 0, 0, 0);
     }
-    /* WARNING: the returned index can be negative */
+    /* WARNING: the returned index can be negative */// 这里对应h264_parser
     index = s->parser->parser_parse(s, avctx, (const uint8_t **) poutbuf,
                                     poutbuf_size, buf, buf_size);
     av_assert0(index > -0x20000000); // The API does not allow returning AVERROR codes
@@ -224,6 +225,13 @@ int av_parser_change(AVCodecParserContext *s, AVCodecContext *avctx,
 void av_parser_close(AVCodecParserContext *s)
 {
     if (s) {
+        UserDataContext* tmp = NULL;
+        while(s->user_data_context != NULL)
+        {
+            tmp = s->user_data_context;
+            s->user_data_context = s->user_data_context->next;
+            av_free(tmp);
+        }
         if (s->parser->parser_close)
             s->parser->parser_close(s);
         av_freep(&s->priv_data);

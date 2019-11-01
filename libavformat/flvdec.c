@@ -717,7 +717,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 
     if (!strcmp(buffer, "onCaptionInfo"))
         return TYPE_ONCAPTIONINFO;
-
+/*
 #ifdef __APPLE__
     if(!strcmp(buffer, "onMetaData"))
     {
@@ -735,6 +735,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
                     amf_get_string(ioc, buf, sizeof(buf));
                     g_user_data = atol(buf);
                     //onMetadata(g_user_data);
+                    av_log(s, AV_LOG_TRACE, "received bytes read report%lld\n", g_user_data);
                 }
             }
             avio_rb24(ioc);
@@ -754,6 +755,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
                     amf_get_string(ioc, buf, sizeof(buf));
                     g_user_data = atol(buf);
                     //onMetadata(g_user_data);
+                    av_log(s, AV_LOG_TRACE, "received bytes read report%lld\n", g_user_data);
                 }
             }
             avio_rb24(ioc);
@@ -803,6 +805,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
         }
     }
 #endif // __APPLE__
+*/
 
     if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint")) 
 	{

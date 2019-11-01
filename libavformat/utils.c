@@ -150,7 +150,7 @@ struct AVCodecParserContext *av_stream_get_parser(const AVStream *st)
 {
     return st->parser;
 }
-//注入全局数据，设置inject_global_size_data为1
+// 注入全局数据，设置inject_global_size_data为1
 void av_format_inject_global_side_data(AVFormatContext *s)
 {
     int i;
@@ -544,17 +544,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
 }
 
 
-//打开输入文件
+// 打开输入文件
 int avformat_open_input(AVFormatContext **ps, const char *filename,
                         AVInputFormat *fmt, AVDictionary **options)
 {
     AVFormatContext *s = *ps;
     int i, ret = 0;
     AVDictionary *tmp = NULL;
-	//metadata
+	// metadata
     ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
-	//如果s不存在就分配内存
+	// 如果s不存在就分配内存
     if (!s && !(s = avformat_alloc_context()))
         return AVERROR(ENOMEM);
     if (!s->av_class) 
@@ -575,7 +575,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
-	//拷贝filename
+	// 拷贝filename
     if (!(s->url = av_strdup(filename ? filename : ""))) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -586,7 +586,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     av_strlcpy(s->filename, filename ? filename : "", sizeof(s->filename));
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-	//初始化输入,探测视频格式如果失败则返回
+	// 初始化输入,探测视频格式如果失败则返回
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
     s->probe_score = ret;//格式得分
@@ -1471,7 +1471,7 @@ void ff_packet_list_free(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
 
 /**
  * Parse a packet, add all split parts to parse_queue.
- *
+ *  解析pakcet，把所有的切分的部分放到parse_queue中
  * @param pkt Packet to parse, NULL when flushing the parser at end of stream.
  */
 static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
@@ -1490,6 +1490,34 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         // preserve 0-size sync packets
         compute_pkt_fields(s, st, st->parser, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
     }
+   
+    //av_log(s, AV_LOG_ERROR, "fffffffffffffffffffff0%p\n",st->parser->user_data_context);
+    UserDataContext* user_data_context = NULL;
+    user_data_context = st->parser->user_data_context;
+    while(user_data_context != NULL)
+    {
+        if(user_data_context->tid == pthread_self())
+        {
+            break;
+        }
+        user_data_context = user_data_context->next;
+    }
+    if(user_data_context == NULL)
+    {
+        av_log(s, AV_LOG_ERROR, "111111111111%lu %u\n",pthread_self(), sizeof(UserDataContext));
+        // TODO 内存释放
+        user_data_context = (UserDataContext*)av_malloc(sizeof(UserDataContext));
+        av_log(s, AV_LOG_ERROR, "22222222222222%p\n",user_data_context);
+        if(user_data_context == NULL)
+        {
+            av_log(s, AV_LOG_ERROR, "3333333333333333%lu %d\n",pthread_self(), errno);
+            goto fail;
+        }
+        user_data_context->tid = pthread_self();
+        user_data_context->user_data = 0;
+        user_data_context->next = st->parser->user_data_context;
+        st->parser->user_data_context = user_data_context;
+    }
 
     while (size > 0 || (pkt == &flush_pkt && got_output)) {
         int len;
@@ -1497,10 +1525,12 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         int64_t next_dts = pkt->dts;
 
         av_init_packet(&out_pkt);
+        // 解码数据包，在这里需要对sequence进行赋值
         len = av_parser_parse2(st->parser, st->internal->avctx,
                                &out_pkt.data, &out_pkt.size, data, size,
                                pkt->pts, pkt->dts, pkt->pos);
-        out_pkt.user_data = pkt->user_data;
+        out_pkt.user_data = user_data_context->user_data;
+        av_log(s, AV_LOG_DEBUG, "uuuuuuuuuuuuuuuu:%ld\n",out_pkt.user_data);
 
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
         pkt->pos = -1;

@@ -26,6 +26,7 @@
 
 #include <stdatomic.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "avcodec.h"
 #include "hwaccel.h"
@@ -165,8 +166,18 @@ static void async_unlock(FrameThreadContext *fctx)
  * not provide an update_thread_context method, or if the codec returns
  * before calling it.
  */
+
+//#define __USE_GNU
+//#include <pthread.h>
+//#include <dlfcn.h>
+//static int (*ppthread_setname_np)(pthread_t, const char*) = NULL;
+#include <sys/prctl.h>
 static attribute_align_arg void *frame_worker_thread(void *arg)
 {
+    //ppthread_setname_np = (int(*)(pthread_t, const char*))dlsym(RTLD_DEFAULT, "pthread_setname_np");
+    //ppthread_setname_np(pthread_self(), "frame_worker_thread");
+    prctl(PR_SET_NAME, "frame_worker_thread");
+
     PerThreadContext *p = arg;
     AVCodecContext *avctx = p->avctx;
     const AVCodec *codec = avctx->codec;
@@ -725,7 +736,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         av_opt_free(avctx->priv_data);
     avctx->codec = NULL;
 }
-
+// 创建ffmpeg编码线程的数量
 int ff_frame_thread_init(AVCodecContext *avctx)
 {
     int thread_count = avctx->thread_count;

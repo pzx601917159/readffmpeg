@@ -457,7 +457,7 @@ finish:
     avio_seek(ioc, initial_pos, SEEK_SET);
     return ret;
 }
-
+//解析metdata,key为metatda
 static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                             AVStream *vstream, const char *key,
                             int64_t max_pos, int depth)
@@ -473,7 +473,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     ioc      = s->pb;
     amf_type = avio_r8(ioc);
 
-    switch (amf_type) {
+    switch (amf_type) 
+	{
     case AMF_DATA_TYPE_NUMBER:
         num_val = av_int2double(avio_rb64(ioc));
         break;
@@ -481,7 +482,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         num_val = avio_r8(ioc);
         break;
     case AMF_DATA_TYPE_STRING:
-        if (amf_get_string(ioc, str_val, sizeof(str_val)) < 0) {
+        if (amf_get_string(ioc, str_val, sizeof(str_val)) < 0) 
+		{
             av_log(s, AV_LOG_ERROR, "AMF_DATA_TYPE_STRING parsing failed\n");
             return -1;
         }
@@ -513,15 +515,18 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     {
         unsigned v;
         avio_skip(ioc, 4);     // skip 32-bit max array index
-        while (avio_tell(ioc) < max_pos - 2 &&
-               amf_get_string(ioc, str_val, sizeof(str_val)) > 0)
+        while (avio_tell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0)
+        {
             // this is the only case in which we would want a nested
             // parse to not skip over the object
-            if (amf_parse_object(s, astream, vstream, str_val, max_pos,
-                                 depth + 1) < 0)
+            if (amf_parse_object(s, astream, vstream, str_val, max_pos, depth + 1) < 0)
+            {
                 return -1;
+            }
+        }
         v = avio_r8(ioc);
-        if (v != AMF_END_OF_OBJECT) {
+        if (v != AMF_END_OF_OBJECT) 
+		{
             av_log(s, AV_LOG_ERROR, "Missing AMF_END_OF_OBJECT in AMF_DATA_TYPE_MIXEDARRAY, found %d\n", v);
             return -1;
         }
@@ -546,63 +551,95 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         return -1;
     }
 
-    if (key) {
+    if (key) 
+	{
         apar = astream ? astream->codecpar : NULL;
         vpar = vstream ? vstream->codecpar : NULL;
 
         // stream info doesn't live any deeper than the first object
-        if (depth == 1) {
-            if (amf_type == AMF_DATA_TYPE_NUMBER ||
-                amf_type == AMF_DATA_TYPE_BOOL) {
+        if (depth == 1) 
+		{
+            if (amf_type == AMF_DATA_TYPE_NUMBER || amf_type == AMF_DATA_TYPE_BOOL) 
+			{
                 if (!strcmp(key, "duration"))
+                {
                     s->duration = num_val * AV_TIME_BASE;
-                else if (!strcmp(key, "videodatarate") &&
-                         0 <= (int)(num_val * 1024.0))
+                }
+                else if (!strcmp(key, "videodatarate") && 0 <= (int)(num_val * 1024.0))
+                {
                     flv->video_bit_rate = num_val * 1024.0;
-                else if (!strcmp(key, "audiodatarate") &&
-                         0 <= (int)(num_val * 1024.0))
+                }
+                else if (!strcmp(key, "audiodatarate") && 0 <= (int)(num_val * 1024.0))
+                {
                     flv->audio_bit_rate = num_val * 1024.0;
-                else if (!strcmp(key, "datastream")) {
+                }
+                else if (!strcmp(key, "datastream")) 
+				{
                     AVStream *st = create_stream(s, AVMEDIA_TYPE_SUBTITLE);
                     if (!st)
+                    {
                         return AVERROR(ENOMEM);
+                    }
                     st->codecpar->codec_id = AV_CODEC_ID_TEXT;
-                } else if (!strcmp(key, "framerate")) {
+                } 
+				else if (!strcmp(key, "framerate")) 
+				{
                     flv->framerate = av_d2q(num_val, 1000);
                     if (vstream)
                         vstream->avg_frame_rate = flv->framerate;
-                } else if (flv->trust_metadata) {
-                    if (!strcmp(key, "videocodecid") && vpar) {
+                } 
+				else if (flv->trust_metadata) 
+				{
+                    if (!strcmp(key, "videocodecid") && vpar) 
+					{
                         int ret = flv_set_video_codec(s, vstream, num_val, 0);
                         if (ret < 0)
                             return ret;
-                    } else if (!strcmp(key, "audiocodecid") && apar) {
+                    }
+					else if (!strcmp(key, "audiocodecid") && apar) 
+					{
                         int id = ((int)num_val) << FLV_AUDIO_CODECID_OFFSET;
                         flv_set_audio_codec(s, astream, apar, id);
-                    } else if (!strcmp(key, "audiosamplerate") && apar) {
+                    }
+					else if (!strcmp(key, "audiosamplerate") && apar) 
+					{
                         apar->sample_rate = num_val;
-                    } else if (!strcmp(key, "audiosamplesize") && apar) {
+                    } 
+					else if (!strcmp(key, "audiosamplesize") && apar) 
+					{
                         apar->bits_per_coded_sample = num_val;
-                    } else if (!strcmp(key, "stereo") && apar) {
+                    } 
+					else if (!strcmp(key, "stereo") && apar) 
+					{
                         apar->channels       = num_val + 1;
                         apar->channel_layout = apar->channels == 2 ?
                                                AV_CH_LAYOUT_STEREO :
                                                AV_CH_LAYOUT_MONO;
-                    } else if (!strcmp(key, "width") && vpar) {
+                    } 
+					// 解析出width和height
+					else if (!strcmp(key, "width") && vpar) 
+					{
                         vpar->width = num_val;
-                    } else if (!strcmp(key, "height") && vpar) {
+                    } 
+					else if (!strcmp(key, "height") && vpar) 
+					{
                         vpar->height = num_val;
                     }
                 }
             }
-            if (amf_type == AMF_DATA_TYPE_STRING) {
-                if (!strcmp(key, "encoder")) {
+            if (amf_type == AMF_DATA_TYPE_STRING) 
+			{
+                if (!strcmp(key, "encoder")) 
+				{
                     int version = -1;
-                    if (1 == sscanf(str_val, "Open Broadcaster Software v0.%d", &version)) {
+                    if (1 == sscanf(str_val, "Open Broadcaster Software v0.%d", &version)) 
+					{
                         if (version > 0 && version <= 655)
                             flv->broken_sizes = 1;
                     }
-                } else if (!strcmp(key, "metadatacreator")) {
+                } 
+				else if (!strcmp(key, "metadatacreator")) 
+				{
                     if (   !strcmp (str_val, "MEGA")
                         || !strncmp(str_val, "FlixEngine", 10))
                         flv->broken_sizes = 1;
@@ -649,7 +686,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
 #define TYPE_ONCAPTION 2
 #define TYPE_ONCAPTIONINFO 3
 #define TYPE_UNKNOWN 9
-
+//flv解析scriptdata
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 {
     FLVContext *flv = s->priv_data;
@@ -666,6 +703,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     ioc     = s->pb;
 
     // first object needs to be "onMetaData" string
+    // 第一个字段必须是onmetadata
     type = avio_r8(ioc);
     if (type != AMF_DATA_TYPE_STRING ||
         amf_get_string(ioc, buffer, sizeof(buffer)) < 0)
@@ -766,30 +804,40 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     }
 #endif // __APPLE__
 
-    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint")) {
+    if (strcmp(buffer, "onMetaData") && strcmp(buffer, "onCuePoint")) 
+	{
         av_log(s, AV_LOG_DEBUG, "Unknown type %s\n", buffer);
         return TYPE_UNKNOWN;
     }
 
     // find the streams now so that amf_parse_object doesn't need to do
     // the lookup every time it is called.
-    for (i = 0; i < s->nb_streams; i++) {
+    for (i = 0; i < s->nb_streams; i++) 
+	{
         stream = s->streams[i];
-        if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) 
+		{
             vstream = stream;
             flv->last_keyframe_stream_index = i;
-        } else if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        } 
+		else if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) 
+		{
             astream = stream;
             if (flv->last_keyframe_stream_index == -1)
                 flv->last_keyframe_stream_index = i;
         }
         else if (stream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        {
             dstream = stream;
+        }
     }
 
     // parse the second object (we want a mixed array)
+    // 解析metadata
     if (amf_parse_object(s, astream, vstream, buffer, next_pos, 0) < 0)
+    {
         return -1;
+    }
 
     return 0;
 }
@@ -1040,11 +1088,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 retry:
     /* pkt size is repeated at end. skip it */
-        pos  = avio_tell(s->pb);
+       	pos  = avio_tell(s->pb);
         type = (avio_r8(s->pb) & 0x1F);
         orig_size =
-        size = avio_rb24(s->pb);
+        size = avio_rb24(s->pb);//这个表示data_size
         flv->sum_flv_tag_size += size + 11;
+		//dts flv timestamp就是dts
         dts  = avio_rb24(s->pb);
         dts |= (unsigned)avio_r8(s->pb) << 24;
         av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
@@ -1271,7 +1320,8 @@ retry_duration:
 
     if (st->codecpar->codec_id == AV_CODEC_ID_AAC ||
         st->codecpar->codec_id == AV_CODEC_ID_H264 ||
-        st->codecpar->codec_id == AV_CODEC_ID_MPEG4) {
+        st->codecpar->codec_id == AV_CODEC_ID_MPEG4) 
+    {
         int type = avio_r8(s->pb);
         size--;
 
@@ -1279,7 +1329,7 @@ retry_duration:
             ret = AVERROR_INVALIDDATA;
             goto leave;
         }
-
+		//通过dts和cts计算pts
         if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_MPEG4) {
             // sign extension
             int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
@@ -1296,10 +1346,12 @@ retry_duration:
             }
         }
         if (type == 0 && (!st->codecpar->extradata || st->codecpar->codec_id == AV_CODEC_ID_AAC ||
-            st->codecpar->codec_id == AV_CODEC_ID_H264)) {
+            st->codecpar->codec_id == AV_CODEC_ID_H264)) 
+         {
             AVDictionaryEntry *t;
 
-            if (st->codecpar->extradata) {
+            if (st->codecpar->extradata) 
+			{
                 if ((ret = flv_queue_extradata(flv, s->pb, stream_type, size)) < 0)
                     return ret;
                 ret = FFERROR_REDO;
@@ -1313,18 +1365,20 @@ retry_duration:
             if (st->codecpar->codec_id == AV_CODEC_ID_AAC && t && !strcmp(t->value, "Omnia A/XE"))
                 st->codecpar->extradata_size = 2;
 
-            if (st->codecpar->codec_id == AV_CODEC_ID_AAC && 0) {
+            if (st->codecpar->codec_id == AV_CODEC_ID_AAC && 0) 
+			{
                 MPEG4AudioConfig cfg;
 
                 if (avpriv_mpeg4audio_get_config(&cfg, st->codecpar->extradata,
-                                                 st->codecpar->extradata_size * 8, 1) >= 0) {
-                st->codecpar->channels       = cfg.channels;
-                st->codecpar->channel_layout = 0;
-                if (cfg.ext_sample_rate)
-                    st->codecpar->sample_rate = cfg.ext_sample_rate;
-                else
-                    st->codecpar->sample_rate = cfg.sample_rate;
-                av_log(s, AV_LOG_TRACE, "mp4a config channels %d sample rate %d\n",
+                                                 st->codecpar->extradata_size * 8, 1) >= 0) 
+                {
+                	st->codecpar->channels       = cfg.channels;
+                	st->codecpar->channel_layout = 0;
+                	if (cfg.ext_sample_rate)
+                    	st->codecpar->sample_rate = cfg.ext_sample_rate;
+                	else
+                    	st->codecpar->sample_rate = cfg.sample_rate;
+               	 	av_log(s, AV_LOG_TRACE, "mp4a config channels %d sample rate %d\n",
                         st->codecpar->channels, st->codecpar->sample_rate);
                 }
             }
@@ -1389,7 +1443,7 @@ leave:
     }
     return ret;
 }
-
+//对应avformatcontext中的read_seek
 static int flv_read_seek(AVFormatContext *s, int stream_index,
                          int64_t ts, int flags)
 {

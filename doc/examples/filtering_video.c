@@ -45,9 +45,12 @@ const char *filter_descr = "scale=78:24,transpose=cclock";
 
 static AVFormatContext *fmt_ctx;
 static AVCodecContext *dec_ctx;
+
+// filter相关
 AVFilterContext *buffersink_ctx;
 AVFilterContext *buffersrc_ctx;
 AVFilterGraph *filter_graph;
+
 static int video_stream_index = -1;
 static int64_t last_pts = AV_NOPTS_VALUE;
 
@@ -55,17 +58,17 @@ static int open_input_file(const char *filename)
 {
     int ret;
     AVCodec *dec;
-
+	// 打开输入
     if ((ret = avformat_open_input(&fmt_ctx, filename, NULL, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
         return ret;
     }
-
+	// 查找stream
     if ((ret = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
         return ret;
     }
-
+	// 查找视频
     /* select the video stream */
     ret = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &dec, 0);
     if (ret < 0) {
@@ -78,9 +81,11 @@ static int open_input_file(const char *filename)
     dec_ctx = avcodec_alloc_context3(dec);
     if (!dec_ctx)
         return AVERROR(ENOMEM);
+	// avcodec_parameters_to_context 通过这个api获取codecContext
     avcodec_parameters_to_context(dec_ctx, fmt_ctx->streams[video_stream_index]->codecpar);
 
     /* init the video decoder */
+	// 打开解码器
     if ((ret = avcodec_open2(dec_ctx, dec, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot open video decoder\n");
         return ret;
@@ -101,7 +106,8 @@ static int init_filters(const char *filters_descr)
     enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
 
     filter_graph = avfilter_graph_alloc();
-    if (!outputs || !inputs || !filter_graph) {
+    if (!outputs || !inputs || !filter_graph) 
+	{
         ret = AVERROR(ENOMEM);
         goto end;
     }
@@ -113,6 +119,7 @@ static int init_filters(const char *filters_descr)
             time_base.num, time_base.den,
             dec_ctx->sample_aspect_ratio.num, dec_ctx->sample_aspect_ratio.den);
 
+	// buffersrc 
     ret = avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in",
                                        args, NULL, filter_graph);
     if (ret < 0) {

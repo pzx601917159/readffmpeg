@@ -495,7 +495,7 @@ extern AVInputFormat  ff_vapoursynth_demuxer;
 
 static const AVInputFormat * const *indev_list = NULL;
 static const AVOutputFormat * const *outdev_list = NULL;
-
+//遍历muxer
 const AVOutputFormat *av_muxer_iterate(void **opaque)
 {
     static const uintptr_t size = sizeof(muxer_list)/sizeof(muxer_list[0]) - 1;
@@ -544,9 +544,11 @@ static void av_format_init_next(void)
     AVOutputFormat *prevout = NULL, *out;
     AVInputFormat *previn = NULL, *in;
 
+	//加锁
     ff_mutex_lock(&avpriv_register_devices_mutex);
-
-    for (int i = 0; (out = (AVOutputFormat*)muxer_list[i]); i++) {
+	//注册一系列的muxer
+    for (int i = 0; (out = (AVOutputFormat*)muxer_list[i]); i++) 
+	{
         if (prevout)
             prevout->next = out;
         prevout = out;
@@ -559,7 +561,7 @@ static void av_format_init_next(void)
             prevout = out;
         }
     }
-
+	//注册一系列的demuxer
     for (int i = 0; (in = (AVInputFormat*)demuxer_list[i]); i++) {
         if (previn)
             previn->next = in;
@@ -573,7 +575,7 @@ static void av_format_init_next(void)
             previn = in;
         }
     }
-
+	//解锁
     ff_mutex_unlock(&avpriv_register_devices_mutex);
 }
 

@@ -1254,7 +1254,8 @@ int64_t avio_seek_time(AVIOContext *s, int stream_index,
     if (!s->read_seek)
         return AVERROR(ENOSYS);
     ret = s->read_seek(s->opaque, stream_index, timestamp, flags);
-    if (ret >= 0) {
+    if (ret >= 0) 
+	{
         int64_t pos;
         s->buf_ptr = s->buf_end; // Flush buffer
         pos = s->seek(s->opaque, 0, SEEK_CUR);

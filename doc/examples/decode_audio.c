@@ -137,6 +137,7 @@ int main(int argc, char **argv)
     data_size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
     while (data_size > 0) {
+		// while循环中没有释放frame
         if (!decoded_frame) {
             if (!(decoded_frame = av_frame_alloc())) {
                 fprintf(stderr, "Could not allocate audio frame\n");
@@ -144,6 +145,7 @@ int main(int argc, char **argv)
             }
         }
 
+		// 新增了这样一个api，这里用来初始化packet
         ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
                                data, data_size,
                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
@@ -155,8 +157,8 @@ int main(int argc, char **argv)
         data_size -= ret;
 
         if (pkt->size)
-            decode(c, pkt, decoded_frame, outfile);
-
+      	    decode(c, pkt, decoded_frame, outfile);
+		
         if (data_size < AUDIO_REFILL_THRESH) {
             memmove(inbuf, data, data_size);
             data = inbuf;

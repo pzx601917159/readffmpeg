@@ -560,9 +560,13 @@ void av_frame_unref(AVFrame *frame)
     wipe_side_data(frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++)
+    {
         av_buffer_unref(&frame->buf[i]);
+    }
     for (i = 0; i < frame->nb_extended_buf; i++)
+    {
         av_buffer_unref(&frame->extended_buf[i]);
+    }
     av_freep(&frame->extended_buf);
     av_dict_free(&frame->metadata);
 #if FF_API_FRAME_QP

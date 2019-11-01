@@ -68,7 +68,9 @@ static int decode_packet(int *got_frame, int cached)
 
     *got_frame = 0;
 
-    if (pkt.stream_index == video_stream_idx) {
+	// 视频文件解码
+    if (pkt.stream_index == video_stream_idx) 
+	{
         /* decode video frame */
         ret = avcodec_decode_video2(video_dec_ctx, frame, got_frame, &pkt);
         if (ret < 0) {
@@ -76,10 +78,11 @@ static int decode_packet(int *got_frame, int cached)
             return ret;
         }
 
-        if (*got_frame) {
-
+        if (*got_frame) 
+		{
             if (frame->width != width || frame->height != height ||
-                frame->format != pix_fmt) {
+                frame->format != pix_fmt) 
+            {
                 /* To handle this change, one could call av_image_alloc again and
                  * decode the following frames into another rawvideo file. */
                 fprintf(stderr, "Error: Width, height and pixel format have to be "
@@ -99,6 +102,7 @@ static int decode_packet(int *got_frame, int cached)
 
             /* copy decoded frame to destination buffer:
              * this is required since rawvideo expects non aligned data */
+            // 拷贝数据
             av_image_copy(video_dst_data, video_dst_linesize,
                           (const uint8_t **)(frame->data), frame->linesize,
                           pix_fmt, width, height);
@@ -106,10 +110,13 @@ static int decode_packet(int *got_frame, int cached)
             /* write to rawvideo file */
             fwrite(video_dst_data[0], 1, video_dst_bufsize, video_dst_file);
         }
-    } else if (pkt.stream_index == audio_stream_idx) {
+    } 
+	else if (pkt.stream_index == audio_stream_idx) 
+	{
         /* decode audio frame */
         ret = avcodec_decode_audio4(audio_dec_ctx, frame, got_frame, &pkt);
-        if (ret < 0) {
+        if (ret < 0) 
+		{
             fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
             return ret;
         }
@@ -119,7 +126,8 @@ static int decode_packet(int *got_frame, int cached)
          * Also, some decoders might over-read the packet. */
         decoded = FFMIN(ret, pkt.size);
 
-        if (*got_frame) {
+        if (*got_frame) 
+		{
             size_t unpadded_linesize = frame->nb_samples * av_get_bytes_per_sample(frame->format);
             printf("audio_frame%s n:%d nb_samples:%d pts:%s\n",
                    cached ? "(cached)" : "",
@@ -248,23 +256,29 @@ int main (int argc, char **argv)
         refcount = 1;
         argv++;
     }
+	// 源文件名
     src_filename = argv[1];
+	// 视频文件名
     video_dst_filename = argv[2];
+	// 音频文件名
     audio_dst_filename = argv[3];
 
     /* open input file, and allocate format context */
-    if (avformat_open_input(&fmt_ctx, src_filename, NULL, NULL) < 0) {
+    if (avformat_open_input(&fmt_ctx, src_filename, NULL, NULL) < 0) 
+	{
         fprintf(stderr, "Could not open source file %s\n", src_filename);
         exit(1);
     }
 
     /* retrieve stream information */
-    if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
+    if (avformat_find_stream_info(fmt_ctx, NULL) < 0) 
+	{
         fprintf(stderr, "Could not find stream information\n");
         exit(1);
     }
 
-    if (open_codec_context(&video_stream_idx, &video_dec_ctx, fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
+    if (open_codec_context(&video_stream_idx, &video_dec_ctx, fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) 
+	{
         video_stream = fmt_ctx->streams[video_stream_idx];
 
         video_dst_file = fopen(video_dst_filename, "wb");
@@ -287,7 +301,8 @@ int main (int argc, char **argv)
         video_dst_bufsize = ret;
     }
 
-    if (open_codec_context(&audio_stream_idx, &audio_dec_ctx, fmt_ctx, AVMEDIA_TYPE_AUDIO) >= 0) {
+    if (open_codec_context(&audio_stream_idx, &audio_dec_ctx, fmt_ctx, AVMEDIA_TYPE_AUDIO) >= 0) 
+	{
         audio_stream = fmt_ctx->streams[audio_stream_idx];
         audio_dst_file = fopen(audio_dst_filename, "wb");
         if (!audio_dst_file) {
@@ -300,14 +315,16 @@ int main (int argc, char **argv)
     /* dump input information to stderr */
     av_dump_format(fmt_ctx, 0, src_filename, 0);
 
-    if (!audio_stream && !video_stream) {
+    if (!audio_stream && !video_stream) 
+	{
         fprintf(stderr, "Could not find audio or video stream in the input, aborting\n");
         ret = 1;
         goto end;
     }
 
     frame = av_frame_alloc();
-    if (!frame) {
+    if (!frame) 
+	{
         fprintf(stderr, "Could not allocate frame\n");
         ret = AVERROR(ENOMEM);
         goto end;
@@ -324,7 +341,8 @@ int main (int argc, char **argv)
         printf("Demuxing audio from file '%s' into '%s'\n", src_filename, audio_dst_filename);
 
     /* read frames from the file */
-    while (av_read_frame(fmt_ctx, &pkt) >= 0) {
+    while (av_read_frame(fmt_ctx, &pkt) >= 0) 
+	{
         AVPacket orig_pkt = pkt;
         do {
             ret = decode_packet(&got_frame, 0);

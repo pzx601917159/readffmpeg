@@ -30,7 +30,7 @@
 
 #include <libavformat/avformat.h>
 #include <libavutil/dict.h>
-
+// 获取metadata的例子
 int main (int argc, char **argv)
 {
     AVFormatContext *fmt_ctx = NULL;

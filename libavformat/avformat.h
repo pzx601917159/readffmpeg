@@ -987,6 +987,7 @@ typedef struct AVStream
 #define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
 
     /**
+     * 流真实的帧率
      * Real base framerate of the stream.
      * This is the lowest framerate with which all timestamps can be
      * represented accurately (it is the least common multiple of all
@@ -1375,7 +1376,7 @@ typedef struct AVFormatContext {
 
     /**
      * I/O context.
-     *		//解码器：用户在av_fromat_open_input钱设置或者或者在avformat_open_input中设置
+     *		//解码器：用户在av_fromat_open_input前设置或者或者在avformat_open_input中设置
      * - demuxing: either set by the user before avformat_open_input() (then
      *             the user must close it manually) or set by avformat_open_input().
   	 * 		//编码器：用户在avformat_write_header前设置，这个调用必须注意不要释放IOcontext，用户设置的用户来释放

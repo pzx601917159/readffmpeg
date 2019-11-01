@@ -59,6 +59,7 @@
 
 #define VOLUME_VAL 0.90
 
+//初始化filter
 static int init_filter_graph(AVFilterGraph **graph, AVFilterContext **src,
                              AVFilterContext **sink)
 {
@@ -79,6 +80,7 @@ static int init_filter_graph(AVFilterGraph **graph, AVFilterContext **src,
     int err;
 
     /* Create a new filtergraph, which will contain all the filters. */
+	// 创建一个滤镜
     filter_graph = avfilter_graph_alloc();
     if (!filter_graph) {
         fprintf(stderr, "Unable to create filter graph.\n");

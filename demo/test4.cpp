@@ -479,7 +479,8 @@ int stream_component_open(VideoState *is, int stream_index) {
   }
 
 
-  if(codecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
+  if(codecCtx->codec_type == AVMEDIA_TYPE_AUDIO) 
+  {
     // Set audio settings from codec info
     wanted_spec.freq = codecCtx->sample_rate;
     wanted_spec.format = AUDIO_S16SYS;
@@ -515,6 +516,7 @@ int stream_component_open(VideoState *is, int stream_index) {
     is->video_st = pFormatCtx->streams[stream_index];
     is->video_ctx = codecCtx;
     packet_queue_init(&is->videoq);
+	//创建视频线程
     is->video_tid = SDL_CreateThread(video_thread, is);
     is->sws_ctx = sws_getContext(is->video_ctx->width, is->video_ctx->height,
 				 is->video_ctx->pix_fmt, is->video_ctx->width,

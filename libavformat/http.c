@@ -1758,6 +1758,7 @@ const URLProtocol ff_http_protocol = {
 };
 #endif /* CONFIG_HTTP_PROTOCOL */
 
+
 #if CONFIG_HTTPS_PROTOCOL
 HTTP_CLASS(https);
 

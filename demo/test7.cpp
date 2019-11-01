@@ -631,10 +631,13 @@ double synchronize_video(VideoState *is, AVFrame *src_frame, double pts) {
 
   double frame_delay;
 
-  if(pts != 0) {
+  if(pts != 0) 
+  {
     /* if we have pts, set video clock to it */
     is->video_clock = pts;
-  } else {
+  } 
+  else 
+  {
     /* if we aren't given a pts, set it to the clock */
     pts = is->video_clock;
   }

@@ -23,9 +23,12 @@
 /**
  * @file
  * audio decoding with libavcodec API example
+ * 解码音频的demo
  *
  * @example decode_audio.c
  */
+
+// 解码音频的例子
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,9 +78,13 @@ static void decode(AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame,
 
 int main(int argc, char **argv)
 {
+    // 输入输出文件名
     const char *outfilename, *filename;
+    // 解码器
     const AVCodec *codec;
+    // 解码器上下文
     AVCodecContext *c= NULL;
+    // 新增的parser 
     AVCodecParserContext *parser = NULL;
     int len, ret;
     FILE *f, *outfile;
@@ -87,36 +94,41 @@ int main(int argc, char **argv)
     AVPacket *pkt;
     AVFrame *decoded_frame = NULL;
 
-    if (argc <= 2) {
+    if (argc <= 2)
+    {
         fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
         exit(0);
     }
     filename    = argv[1];
     outfilename = argv[2];
-
+    // 分配pkt
     pkt = av_packet_alloc();
 
     /* find the MPEG audio decoder */
+    // 查找decoder
     codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
-    if (!codec) {
+    if (!codec) 
+    {
         fprintf(stderr, "Codec not found\n");
         exit(1);
     }
-
+    // 初始化parser
     parser = av_parser_init(codec->id);
-    if (!parser) {
+    if (!parser) 
+    {
         fprintf(stderr, "Parser not found\n");
         exit(1);
     }
-
+    // 分配解码器
     c = avcodec_alloc_context3(codec);
     if (!c) {
         fprintf(stderr, "Could not allocate audio codec context\n");
         exit(1);
     }
-
+    // 打开解码器
     /* open it */
-    if (avcodec_open2(c, codec, NULL) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) 
+    {
         fprintf(stderr, "Could not open codec\n");
         exit(1);
     }
@@ -133,17 +145,22 @@ int main(int argc, char **argv)
     }
 
     /* decode until eof */
+    // 解码直到结束
     data      = inbuf;
     data_size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
-    while (data_size > 0) {
-        if (!decoded_frame) {
-            if (!(decoded_frame = av_frame_alloc())) {
+    while (data_size > 0) 
+    {
+        if (!decoded_frame) 
+        {
+            // 一次分配一次释放
+            if (!(decoded_frame = av_frame_alloc())) 
+            {
                 fprintf(stderr, "Could not allocate audio frame\n");
                 exit(1);
             }
         }
-
+        // 解析数据
         ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
                                data, data_size,
                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
@@ -157,9 +174,11 @@ int main(int argc, char **argv)
         if (pkt->size)
             decode(c, pkt, decoded_frame, outfile);
 
-        if (data_size < AUDIO_REFILL_THRESH) {
+        if (data_size < AUDIO_REFILL_THRESH)
+        {
             memmove(inbuf, data, data_size);
             data = inbuf;
+            // 继续读取数据
             len = fread(data + data_size, 1,
                         AUDIO_INBUF_SIZE - data_size, f);
             if (len > 0)
@@ -172,9 +191,11 @@ int main(int argc, char **argv)
     pkt->size = 0;
     decode(c, pkt, decoded_frame, outfile);
 
+    // 释放文件资源
     fclose(outfile);
     fclose(f);
-
+   
+    // 释放内存
     avcodec_free_context(&c);
     av_parser_close(parser);
     av_frame_free(&decoded_frame);

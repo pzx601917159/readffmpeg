@@ -23,7 +23,7 @@
 /**
  * @file
  * video decoding with libavcodec API example
- *
+ * 解码视频的例子
  * @example decode_video.c
  */
 

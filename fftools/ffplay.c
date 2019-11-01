@@ -235,27 +235,28 @@ typedef struct Decoder
     AVRational next_pts_tb;
     SDL_Thread *decoder_tid;    //解码线程ID
 } Decoder;
+
 //视频状态
 typedef struct VideoState 
 {
-    SDL_Thread *read_tid;	    //读取视频的线程id
-    AVInputFormat *iformat;	    //输入上下文
-    int abort_request;          //退出情趣
-    int force_refresh;
-    int paused;                 //暂停
-    int last_paused;            //上次暂停
+    SDL_Thread *read_tid;	    // 读取视频的线程id
+    AVInputFormat *iformat;	    // 输入上下文
+    int abort_request;          // 退出请求
+    int force_refresh;          // 强制刷新
+    int paused;                 // 暂停
+    int last_paused;            // 上次暂停
     int queue_attachments_req;
     int seek_req;               //seek请求
     int seek_flags;             //seek标志
     int64_t seek_pos;           //seek的位置
     int64_t seek_rel;           //seek的实际位置
     int read_pause_return;
-    AVFormatContext *ic;
+    AVFormatContext *ic;        // format上下文
     int realtime;
 
-    Clock audclk;
-    Clock vidclk;
-    Clock extclk;
+    Clock audclk;   // 音频时钟
+    Clock vidclk;   // 视频时钟
+    Clock extclk;   // 外部时钟
 
     FrameQueue pictq;   //图片的队列
     FrameQueue subpq;   //字幕队列
@@ -294,11 +295,11 @@ typedef struct VideoState
     struct SwrContext *swr_ctx;
     int frame_drops_early;
     int frame_drops_late;
-
+    // 显示模式
     enum ShowMode 
 	{
         SHOW_MODE_NONE = -1,
-		SHOW_MODE_VIDEO = 0, 
+		SHOW_MODE_VIDEO = 0, // 只显示视频
 		SHOW_MODE_WAVES, 
 		SHOW_MODE_RDFT, 
 		SHOW_MODE_NB
@@ -331,7 +332,7 @@ typedef struct VideoState
     struct SwsContext *sub_convert_ctx;
     int eof;
 
-    char *filename;
+    char *filename; // 文件名
     int width, height, xleft, ytop;
     int step;
 
@@ -370,7 +371,7 @@ static int display_disable;
 static int borderless;
 static int startup_volume = 100;
 static int show_status = 1;
-//static int av_sync_type = AV_SYNC_AUDIO_MASTER;
+//static int av_sync_type = AV_SYNC_VIDEO_MASTER;
 //默认的同步方法为通过音频同步
 static int av_sync_type = AV_SYNC_VIDEO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
@@ -1177,7 +1178,7 @@ static inline int compute_mod(int a, int b)
 {
     return a < 0 ? a%b + b : a%b;
 }
-//音视频显示
+// 播放音频
 static void video_audio_display(VideoState *s)
 {
     int i, i_start, x, y1, y, ys, delay, n, nb_display_channels;
@@ -1192,15 +1193,18 @@ static void video_audio_display(VideoState *s)
     /* compute display index : center on currently output samples */
     channels = s->audio_tgt.channels;
     nb_display_channels = channels;
-    if (!s->paused) {
+    if (!s->paused) 
+    {
         int data_used= s->show_mode == SHOW_MODE_WAVES ? s->width : (2*nb_freq);
         n = 2 * channels;
         delay = s->audio_write_buf_size;
         delay /= n;
 
+        // 需要更精确
         /* to be more precise, we take into account the time spent since
            the last buffer computation */
-        if (audio_callback_time) {
+        if (audio_callback_time) 
+        {
             time_diff = av_gettime_relative() - audio_callback_time;
             delay -= (time_diff * s->audio_tgt.freq) / 1000000;
         }
@@ -1227,11 +1231,14 @@ static void video_audio_display(VideoState *s)
         }
 
         s->last_i_start = i_start;
-    } else {
+    } 
+    else 
+    {
         i_start = s->last_i_start;
     }
-
-    if (s->show_mode == SHOW_MODE_WAVES) {
+    // 显示模式
+    if (s->show_mode == SHOW_MODE_WAVES) 
+    {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
         /* total height for one channel */
@@ -1262,27 +1269,34 @@ static void video_audio_display(VideoState *s)
             y = s->ytop + ch * h;
             fill_rectangle(s->xleft, y, s->width, 1);
         }
-    } else {
+    } 
+    else 
+    {
         if (realloc_texture(&s->vis_texture, SDL_PIXELFORMAT_ARGB8888, s->width, s->height, SDL_BLENDMODE_NONE, 1) < 0)
             return;
 
         nb_display_channels= FFMIN(nb_display_channels, 2);
-        if (rdft_bits != s->rdft_bits) {
+        if (rdft_bits != s->rdft_bits) 
+        {
             av_rdft_end(s->rdft);
             av_free(s->rdft_data);
             s->rdft = av_rdft_init(rdft_bits, DFT_R2C);
             s->rdft_bits = rdft_bits;
             s->rdft_data = av_malloc_array(nb_freq, 4 *sizeof(*s->rdft_data));
         }
-        if (!s->rdft || !s->rdft_data){
+        if (!s->rdft || !s->rdft_data)
+        {
             av_log(NULL, AV_LOG_ERROR, "Failed to allocate buffers for RDFT, switching to waves display\n");
             s->show_mode = SHOW_MODE_WAVES;
-        } else {
+        } 
+        else 
+        {
             FFTSample *data[2];
             SDL_Rect rect = {.x = s->xpos, .y = 0, .w = 1, .h = s->height};
             uint32_t *pixels;
             int pitch;
-            for (ch = 0; ch < nb_display_channels; ch++) {
+            for (ch = 0; ch < nb_display_channels; ch++) 
+            {
                 data[ch] = s->rdft_data + 2 * nb_freq * ch;
                 i = i_start + ch;
                 for (x = 0; x < 2 * nb_freq; x++) {
@@ -1296,7 +1310,8 @@ static void video_audio_display(VideoState *s)
             }
             /* Least efficient way to do this, we should of course
              * directly access it but it is more than fast enough. */
-            if (!SDL_LockTexture(s->vis_texture, &rect, (void **)&pixels, &pitch)) {
+            if (!SDL_LockTexture(s->vis_texture, &rect, (void **)&pixels, &pitch)) 
+            {
                 pitch >>= 2;
                 pixels += pitch * s->height;
                 for (y = 0; y < s->height; y++) {
@@ -1477,6 +1492,7 @@ static int video_open(VideoState *is)
 }
 
 /* display the current picture, if any */
+// 显示当前的图片
 static void video_display(VideoState *is)
 {
     if (!is->width)

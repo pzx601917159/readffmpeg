@@ -24,6 +24,7 @@
  * @file
  * libavformat AVIOContext API example.
  *
+ * avformat demuxer 通过用户指定的回调函数接收媒体信息
  * Make libavformat demuxer access media content through a custom
  * AVIOContext read callback.
  * @example avio_reading.c
@@ -34,6 +35,8 @@
 #include <libavformat/avio.h>
 #include <libavutil/file.h>
 
+// 设置回调函数读取数据的例子
+
 struct buffer_data {
     uint8_t *ptr;
     size_t size; ///< size left in the buffer
@@ -43,7 +46,7 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     struct buffer_data *bd = (struct buffer_data *)opaque;
     buf_size = FFMIN(buf_size, bd->size);
-
+    // 如果数据读完则返回EOF
     if (!buf_size)
         return AVERROR_EOF;
     printf("ptr:%p size:%zu\n", bd->ptr, bd->size);
@@ -66,7 +69,8 @@ int main(int argc, char *argv[])
     int ret = 0;
     struct buffer_data bd = { 0 };
 
-    if (argc != 2) {
+    if (argc != 2)
+    {
         fprintf(stderr, "usage: %s input_file\n"
                 "API example program to show how to read from a custom buffer "
                 "accessed through AVIOContext.\n", argv[0]);
@@ -75,6 +79,7 @@ int main(int argc, char *argv[])
     input_filename = argv[1];
 
     /* slurp file content into buffer */
+    // 如果有mmap则使用mmap
     ret = av_file_map(input_filename, &buffer, &buffer_size, 0, NULL);
     if (ret < 0)
         goto end;
@@ -87,7 +92,7 @@ int main(int argc, char *argv[])
         ret = AVERROR(ENOMEM);
         goto end;
     }
-
+    // 自定义的buffer
     avio_ctx_buffer = av_malloc(avio_ctx_buffer_size);
     if (!avio_ctx_buffer) {
         ret = AVERROR(ENOMEM);

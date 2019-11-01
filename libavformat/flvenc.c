@@ -24,6 +24,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time.h"
 #include "avio_internal.h"
 #include "avio.h"
 #include "avc.h"
@@ -310,6 +311,13 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
         // fill in the guessed duration, it'll be corrected later if incorrect
         put_amf_double(pb, s->duration / AV_TIME_BASE);
     }
+
+	put_amf_string(pb,"user_data");
+	//时间戳
+	char timebuf[14];
+    int64_t now = av_gettime()/1000;
+	snprintf(timebuf, sizeof(timebuf), "%ld", now);
+	put_amf_string(pb,timebuf);
 
     if (flv->video_par) {
         put_amf_string(pb, "width");

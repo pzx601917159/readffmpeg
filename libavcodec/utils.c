@@ -534,7 +534,7 @@ int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AV
     ff_lock_avcodec(avctx, codec);
     return ret;
 }
-
+// 这里面开启了多个读数据的线程
 int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;

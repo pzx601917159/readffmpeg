@@ -156,7 +156,8 @@ int main(int argc, char **argv)
 
     /* check that the encoder supports s16 pcm input */
     c->sample_fmt = AV_SAMPLE_FMT_S16;
-    if (!check_sample_fmt(codec, c->sample_fmt)) {
+    if (!check_sample_fmt(codec, c->sample_fmt)) 
+	{
         fprintf(stderr, "Encoder does not support sample format %s",
                 av_get_sample_fmt_name(c->sample_fmt));
         exit(1);

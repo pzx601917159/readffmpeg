@@ -151,6 +151,7 @@ AVFormatContext *avformat_alloc_context(void)
     ic = av_malloc(sizeof(AVFormatContext));
     if (!ic) 
 		return ic;
+	//获取formatcontext的默认值，相当于C++的构造函数
     avformat_get_context_defaults(ic);
 
     ic->internal = av_mallocz(sizeof(*ic->internal));

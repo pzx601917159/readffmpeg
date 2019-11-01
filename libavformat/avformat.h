@@ -327,6 +327,7 @@ struct AVFormatContext;
 
 struct AVDeviceInfoList;
 struct AVDeviceCapabilitiesQuery;
+//added by PZX
 extern int64_t g_user_data;
 
 /**
@@ -411,12 +412,13 @@ extern int64_t g_user_data;
 
 
 /**
+ * 分配并读取packet的payload并用默认值初始化packet的字段
  * Allocate and read the payload of a packet and initialize its
  * fields with default values.
  *
  * @param s    associated IO context
  * @param pkt packet
- * @param size desired payload size
+ * @param size desired payload size	//想要读取的数据大小
  * @return >0 (read size) if OK, AVERROR_xxx otherwise
  */
 int av_get_packet(AVIOContext *s, AVPacket *pkt, int size);
@@ -447,7 +449,8 @@ struct AVCodecTag;
  * This structure contains the data a format has to probe a file.
  */
  //探测文件格式的数据
-typedef struct AVProbeData {
+typedef struct AVProbeData 
+{
     const char *filename; 	//文件名
     unsigned char *buf; 	/**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
     int buf_size;       	/**< Size of buf except extra allocated bytes */
@@ -496,7 +499,8 @@ typedef struct AVProbeData {
  * @addtogroup lavf_encoding
  * @{
  */
-typedef struct AVOutputFormat {
+typedef struct AVOutputFormat 
+{
     const char *name;
     /**
      * Descriptive name for the format, meant to be more human-readable
@@ -632,7 +636,8 @@ typedef struct AVOutputFormat {
  * @addtogroup lavf_decoding
  * @{
  */
-typedef struct AVInputFormat {
+typedef struct AVInputFormat 
+{
     /**
      * A comma separated list of short names for the format. New names
      * may be appended with a minor bump.
@@ -864,7 +869,8 @@ typedef struct AVStreamInternal AVStreamInternal;
  * version bump.
  * sizeof(AVStream) must not be used outside libav*.
  */
-typedef struct AVStream {
+typedef struct AVStream 
+{
     int index;    /**< stream index in AVFormatContext */
     /**
      * Format-specific stream ID.
@@ -981,6 +987,7 @@ typedef struct AVStream {
 #define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
 
     /**
+     * 流真实的帧率
      * Real base framerate of the stream.
      * This is the lowest framerate with which all timestamps can be
      * represented accurately (it is the least common multiple of all
@@ -1369,7 +1376,7 @@ typedef struct AVFormatContext {
 
     /**
      * I/O context.
-     *		//解码器：用户在av_fromat_open_input钱设置或者或者在avformat_open_input中设置
+     *		//解码器：用户在av_fromat_open_input前设置或者或者在avformat_open_input中设置
      * - demuxing: either set by the user before avformat_open_input() (then
      *             the user must close it manually) or set by avformat_open_input().
   	 * 		//编码器：用户在avformat_write_header前设置，这个调用必须注意不要释放IOcontext，用户设置的用户来释放
@@ -2121,12 +2128,14 @@ const AVInputFormat *av_demuxer_iterate(void **opaque);
  * avformat_free_context() can be used to free the context and everything
  * allocated by the framework within it.
  */
+ //分配AvformatContext
 AVFormatContext *avformat_alloc_context(void);
 
 /**
  * Free an AVFormatContext and all its streams.
  * @param s context to free
  */
+ //释放AvfoamtContext
 void avformat_free_context(AVFormatContext *s);
 
 /**
@@ -2290,7 +2299,9 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           unsigned int offset, unsigned int max_probe_size);
 
 /**
+ * 打开一个输入文件并且读取文件头，编解码器并没有打开
  * Open an input stream and read the header. The codecs are not opened.
+ * 通过avformat_close_input关闭
  * The stream must be closed with avformat_close_input().
  *
  * @param ps Pointer to user-supplied AVFormatContext (allocated by avformat_alloc_context).
@@ -2314,10 +2325,13 @@ attribute_deprecated
 int av_demuxer_open(AVFormatContext *ic);
 
 /**
+ * 读取文件的媒体数据包来获取流信息，这对于没有数据头的文件格式非常有用，例如mpeg
+ * 这个函数也计算真实的帧率
  * Read packets of a media file to get stream information. This
  * is useful for file formats with no headers such as MPEG. This
  * function also computes the real framerate in case of MPEG-2 repeat
  * frame mode.
+ * 这个逻辑文件位置不会被这个函数改变，读取过的数据会被保存下来继续使用
  * The logical file position is not changed by this function;
  * examined packets may be buffered for later processing.
  *
@@ -2327,7 +2341,7 @@ int av_demuxer_open(AVFormatContext *ic);
  *                 codec corresponding to i-th stream.
  *                 On return each dictionary will be filled with options that were not found.
  * @return >=0 if OK, AVERROR_xxx on error
- *
+ *		这个函数不保证打开所有的编解码器，所以options参数返回非空是一个完美的行为
  * @note this function isn't guaranteed to open all the codecs, so
  *       options being non-empty at return is a perfectly normal behavior.
  *

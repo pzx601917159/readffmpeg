@@ -26,7 +26,7 @@
 #include "mem.h"
 #include "time_internal.h"
 #include "bprint.h"
-
+//相当于c++的map，键值对
 struct AVDictionary {
     int count;
     AVDictionaryEntry *elems;
@@ -50,7 +50,8 @@ AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
     else
         i = 0;
 
-    for (; i < m->count; i++) {
+    for (; i < m->count; i++) 
+	{
         const char *s = m->elems[i].key;
         if (flags & AV_DICT_MATCH_CASE)
             for (j = 0; s[j] == key[j] && key[j]; j++)
@@ -74,7 +75,8 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
     AVDictionaryEntry *tag = NULL;
     char *oldval = NULL, *copy_key = NULL, *copy_value = NULL;
 
-    if (!(flags & AV_DICT_MULTIKEY)) {
+    if (!(flags & AV_DICT_MULTIKEY)) 
+	{
         tag = av_dict_get(m, key, NULL, flags);
     }
     if (flags & AV_DICT_DONT_STRDUP_KEY)
@@ -90,8 +92,10 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
     if (!m || (key && !copy_key) || (value && !copy_value))
         goto err_out;
 
-    if (tag) {
-        if (flags & AV_DICT_DONT_OVERWRITE) {
+    if (tag) 
+	{
+        if (flags & AV_DICT_DONT_OVERWRITE) 
+		{
             av_free(copy_key);
             av_free(copy_value);
             return 0;
@@ -102,7 +106,9 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             av_free(tag->value);
         av_free(tag->key);
         *tag = m->elems[--m->count];
-    } else if (copy_value) {
+    } 
+	else if (copy_value) 
+	{
         AVDictionaryEntry *tmp = av_realloc(m->elems,
                                             (m->count + 1) * sizeof(*m->elems));
         if (!tmp)

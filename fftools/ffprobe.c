@@ -119,6 +119,7 @@ static char *print_format;
 static char *stream_specifier;
 static char *show_data_hash;
 
+
 typedef struct ReadInterval {
     int id;             ///< identifier
     int64_t start, end; ///< start, end in second/AV_TIME_BASE units
@@ -2817,20 +2818,20 @@ static void show_error(WriterContext *w, int err)
     print_str("string", errbuf_ptr);
     writer_print_section_footer(w);
 }
-
+//打开输入文件或者网络流
 static int open_input_file(InputFile *ifile, const char *filename)
 {
     int err, i;
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *t;
     int scan_all_pmts_set = 0;
-
+	//分配fmt_ctx
     fmt_ctx = avformat_alloc_context();
     if (!fmt_ctx) {
         print_error(filename, AVERROR(ENOMEM));
         exit_program(1);
     }
-
+	//判断scan_all_pmts是否存在，不存在则设置
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
         av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
@@ -2843,12 +2844,14 @@ static int open_input_file(InputFile *ifile, const char *filename)
     ifile->fmt_ctx = fmt_ctx;
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
-    if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+    if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) 
+	{
         av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
         return AVERROR_OPTION_NOT_FOUND;
     }
 
     if (find_stream_info) {
+		//设置find_stream_info的选项
         AVDictionary **opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
         int orig_nb_streams = fmt_ctx->nb_streams;
 
@@ -3653,7 +3656,8 @@ int main(int argc, char **argv)
     }
 
     if ((ret = writer_open(&wctx, w, w_args,
-                           sections, FF_ARRAY_ELEMS(sections))) >= 0) {
+                           sections, FF_ARRAY_ELEMS(sections))) >= 0) 
+    {
         if (w == &xml_writer)
             wctx->string_validation_utf8_flags |= AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES;
 
@@ -3668,12 +3672,15 @@ int main(int argc, char **argv)
 
         if (!input_filename &&
             ((do_show_format || do_show_programs || do_show_streams || do_show_chapters || do_show_packets || do_show_error) ||
-             (!do_show_program_version && !do_show_library_versions && !do_show_pixel_formats))) {
+             (!do_show_program_version && !do_show_library_versions && !do_show_pixel_formats))) 
+        {
             show_usage();
             av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
             av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
             ret = AVERROR(EINVAL);
-        } else if (input_filename) {
+        } 
+        else if (input_filename) 
+        {
             ret = probe_file(wctx, input_filename);
             if (ret < 0 && do_show_error)
                 show_error(wctx, ret);
@@ -3695,4 +3702,6 @@ end:
     avformat_network_deinit();
 
     return ret < 0;
+    //printf("g_user_data:%d\n", g_user_data);
+    //return g_user_data;
 }

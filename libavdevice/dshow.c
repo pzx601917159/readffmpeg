@@ -138,7 +138,7 @@ static char *dup_wchar_to_utf8(wchar_t *w)
         WideCharToMultiByte(CP_UTF8, 0, w, -1, s, l, 0, 0);
     return s;
 }
-
+// 决定是否丢帧
 static int shall_we_drop(AVFormatContext *s, int index, enum dshowDeviceType devtype)
 {
     struct dshow_ctx *ctx = s->priv_data;
@@ -147,7 +147,8 @@ static int shall_we_drop(AVFormatContext *s, int index, enum dshowDeviceType dev
     unsigned int buffer_fullness = (ctx->curbufsize[index]*100)/s->max_picture_buffer;
     const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
 
-    if(dropscore[++ctx->video_frame_num%ndropscores] <= buffer_fullness) {
+    if(dropscore[++ctx->video_frame_num%ndropscores] <= buffer_fullness) 
+	{
         av_log(s, AV_LOG_ERROR,
               "real-time buffer [%s] [%s input] too full or near too full (%d%% of size: %d [rtbufsize parameter])! frame dropped!\n",
               ctx->device_name[devtype], devtypename, buffer_fullness, s->max_picture_buffer);

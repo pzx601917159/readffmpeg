@@ -559,7 +559,7 @@ static void dump_stream_format(AVFormatContext *ic, int i,
 
     dump_sidedata(NULL, st, "    ");
 }
-
+//打印视频格式信息
 void av_dump_format(AVFormatContext *ic, int index,
                     const char *url, int is_output)
 {

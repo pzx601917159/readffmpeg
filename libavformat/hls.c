@@ -2065,23 +2065,30 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
     recheck_discard_flags(s, c->first_packet);
     c->first_packet = 0;
 
-    for (i = 0; i < c->n_playlists; i++) {
+    for (i = 0; i < c->n_playlists; i++) 
+	{
         struct playlist *pls = c->playlists[i];
         /* Make sure we've got one buffered packet from each open playlist
          * stream */
-        if (pls->needed && !pls->pkt.data) {
-            while (1) {
+        if (pls->needed && !pls->pkt.data) 
+		{
+            while (1) 
+			{
                 int64_t ts_diff;
                 AVRational tb;
                 ret = av_read_frame(pls->ctx, &pls->pkt);
-                if (ret < 0) {
+                if (ret < 0) 
+				{
                     if (!avio_feof(&pls->pb) && ret != AVERROR_EOF)
                         return ret;
                     reset_packet(&pls->pkt);
                     break;
-                } else {
+                } 
+				else 
+				{
                     /* stream_index check prevents matching picture attachments etc. */
-                    if (pls->is_id3_timestamped && pls->pkt.stream_index == 0) {
+                    if (pls->is_id3_timestamped && pls->pkt.stream_index == 0) 
+					{
                         /* audio elementary streams are id3 timestamped */
                         fill_timing_for_id3_timestamped_stream(pls);
                     }
@@ -2105,10 +2112,9 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 
                     tb = get_timebase(pls);
                     ts_diff = av_rescale_rnd(pls->pkt.dts, AV_TIME_BASE,
-                                            tb.den, AV_ROUND_DOWN) -
-                            pls->seek_timestamp;
-                    if (ts_diff >= 0 && (pls->seek_flags  & AVSEEK_FLAG_ANY ||
-                                        pls->pkt.flags & AV_PKT_FLAG_KEY)) {
+                                            tb.den, AV_ROUND_DOWN) - pls->seek_timestamp;
+                    if (ts_diff >= 0 && (pls->seek_flags  & AVSEEK_FLAG_ANY || pls->pkt.flags & AV_PKT_FLAG_KEY)) 
+					{
                         pls->seek_timestamp = AV_NOPTS_VALUE;
                         break;
                     }
@@ -2121,9 +2127,12 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (pls->pkt.data) {
             struct playlist *minpls = minplaylist < 0 ?
                                      NULL : c->playlists[minplaylist];
-            if (minplaylist < 0) {
+            if (minplaylist < 0) 
+			{
                 minplaylist = i;
-            } else {
+            } 
+			else 
+			{
                 int64_t dts     =    pls->pkt.dts;
                 int64_t mindts  = minpls->pkt.dts;
 

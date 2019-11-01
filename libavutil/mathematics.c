@@ -63,9 +63,12 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
     av_assert2((unsigned)(rnd&~AV_ROUND_PASS_MINMAX)<=5 && (rnd&~AV_ROUND_PASS_MINMAX)!=4);
 
     if (c <= 0 || b < 0 || !((unsigned)(rnd&~AV_ROUND_PASS_MINMAX)<=5 && (rnd&~AV_ROUND_PASS_MINMAX)!=4))
+    {
         return INT64_MIN;
+    }
 
-    if (rnd & AV_ROUND_PASS_MINMAX) {
+    if (rnd & AV_ROUND_PASS_MINMAX) 
+	{
         if (a == INT64_MIN || a == INT64_MAX)
             return a;
         rnd -= AV_ROUND_PASS_MINMAX;
@@ -75,13 +78,14 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
         return -(uint64_t)av_rescale_rnd(-FFMAX(a, -INT64_MAX), b, c, rnd ^ ((rnd >> 1) & 1));
 
     if (rnd == AV_ROUND_NEAR_INF)
-        r = c / 2;
+        r = c / 2;		// c除2
     else if (rnd & 1)
         r = c - 1;
 
-    if (b <= INT_MAX && c <= INT_MAX) {
+    if (b <= INT_MAX && c <= INT_MAX)
+	{
         if (a <= INT_MAX)
-            return (a * b + r) / c;
+            return (a * b + r) / c;		// ab 相乘  + c的一半 除c
         else {
             int64_t ad = a / c;
             int64_t a2 = (a % c * b + r) / c;

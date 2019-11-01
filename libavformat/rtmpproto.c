@@ -2249,18 +2249,22 @@ static int handle_notify(URLContext *s, RTMPPacket *pkt)
                            &stringlen))
         return AVERROR_INVALIDDATA;
 
+/*
     #ifdef __APPLE__
     if(!ff_amf_get_field_value(pkt->data, pkt->data + pkt->size, "user_data", user_data, sizeof(user_data)))
     {
         g_user_data = strtoll(user_data, user_data + strlen(user_data), 10);
         //onMetadata(g_user_data);
+        av_log(s, AV_LOG_TRACE, "received bytes read report%lld\n", g_user_data);
     }
 #else
     if(!ff_amf_get_field_value(pkt->data, pkt->data + pkt->size, "user_data", user_data, sizeof(user_data)))
     {
         g_user_data = strtoll(user_data, user_data + strlen(user_data), 10);
+        av_log(s, AV_LOG_TRACE, "received bytes read report%lld\n", g_user_data);
     }
 #endif // __APPLE__
+*/
 
     if (!strcmp(commandbuffer, "onMetaData")) {
         // metadata properties should be stored in a mixed array

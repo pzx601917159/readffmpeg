@@ -34,7 +34,7 @@
 #include <libavcodec/avcodec.h>
 
 #define INBUF_SIZE 4096
-
+// 保存叔叔
 static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
                      char *filename)
 {
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Could not open %s\n", filename);
         exit(1);
     }
-
+	// 分配frame
     frame = av_frame_alloc();
     if (!frame) {
         fprintf(stderr, "Could not allocate video frame\n");
@@ -158,6 +158,7 @@ int main(int argc, char **argv)
         /* use the parser to split the data into frames */
         data = inbuf;
         while (data_size > 0) {
+			// 初始packet
             ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
                                    data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
             if (ret < 0) {
@@ -173,8 +174,10 @@ int main(int argc, char **argv)
     }
 
     /* flush the decoder */
+	// 最后还要多decode一次来清空decoder
     decode(c, frame, NULL, outfilename);
 
+	// 释放资源
     fclose(f);
 
     av_parser_close(parser);

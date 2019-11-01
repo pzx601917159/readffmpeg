@@ -160,7 +160,8 @@ int main(int argc, char **argv)
                 exit(1);
             }
         }
-        // 解析数据
+
+		// 新增了这样一个api，这里用来初始化packet
         ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
                                data, data_size,
                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
@@ -172,10 +173,9 @@ int main(int argc, char **argv)
         data_size -= ret;
 
         if (pkt->size)
-            decode(c, pkt, decoded_frame, outfile);
-
-        if (data_size < AUDIO_REFILL_THRESH)
-        {
+      	    decode(c, pkt, decoded_frame, outfile);
+		
+        if (data_size < AUDIO_REFILL_THRESH) {
             memmove(inbuf, data, data_size);
             data = inbuf;
             // 继续读取数据

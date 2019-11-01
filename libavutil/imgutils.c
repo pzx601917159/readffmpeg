@@ -354,27 +354,32 @@ static void image_copy(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
         return;
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & FF_PSEUDOPAL) {
+        desc->flags & FF_PSEUDOPAL) 
+    {
         copy_plane(dst_data[0], dst_linesizes[0],
                    src_data[0], src_linesizes[0],
                    width, height);
         /* copy the palette */
         if ((desc->flags & AV_PIX_FMT_FLAG_PAL) || (dst_data[1] && src_data[1]))
             memcpy(dst_data[1], src_data[1], 4*256);
-    } else {
+    } 
+	else 
+	{
         int i, planes_nb = 0;
 
         for (i = 0; i < desc->nb_components; i++)
             planes_nb = FFMAX(planes_nb, desc->comp[i].plane + 1);
 
-        for (i = 0; i < planes_nb; i++) {
+        for (i = 0; i < planes_nb; i++) 
+		{
             int h = height;
             ptrdiff_t bwidth = av_image_get_linesize(pix_fmt, width, i);
             if (bwidth < 0) {
                 av_log(NULL, AV_LOG_ERROR, "av_image_get_linesize failed\n");
                 return;
             }
-            if (i == 1 || i == 2) {
+            if (i == 1 || i == 2) 
+			{
                 h = AV_CEIL_RSHIFT(height, desc->log2_chroma_h);
             }
             copy_plane(dst_data[i], dst_linesizes[i],
@@ -384,6 +389,7 @@ static void image_copy(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
     }
 }
 
+// 拷贝YUV数据到buf中
 void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                    const uint8_t *src_data[4], const int src_linesizes[4],
                    enum AVPixelFormat pix_fmt, int width, int height)

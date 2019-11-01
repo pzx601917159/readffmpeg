@@ -37,7 +37,8 @@
 #include "libavcodec/aacenctab.h"
 
 
-static const AVCodecTag flv_video_codec_ids[] = {
+static const AVCodecTag flv_video_codec_ids[] = 
+{
     { AV_CODEC_ID_FLV1,     FLV_CODECID_H263 },
     { AV_CODEC_ID_H263,     FLV_CODECID_REALH263 },
     { AV_CODEC_ID_MPEG4,    FLV_CODECID_MPEG4 },
@@ -50,7 +51,8 @@ static const AVCodecTag flv_video_codec_ids[] = {
     { AV_CODEC_ID_NONE,     0 }
 };
 
-static const AVCodecTag flv_audio_codec_ids[] = {
+static const AVCodecTag flv_audio_codec_ids[] = 
+{
     { AV_CODEC_ID_MP3,        FLV_CODECID_MP3        >> FLV_AUDIO_CODECID_OFFSET },
     { AV_CODEC_ID_PCM_U8,     FLV_CODECID_PCM        >> FLV_AUDIO_CODECID_OFFSET },
     { AV_CODEC_ID_PCM_S16BE,  FLV_CODECID_PCM        >> FLV_AUDIO_CODECID_OFFSET },
@@ -64,7 +66,8 @@ static const AVCodecTag flv_audio_codec_ids[] = {
     { AV_CODEC_ID_NONE,       0 }
 };
 
-typedef enum {
+typedef enum 
+{
     FLV_AAC_SEQ_HEADER_DETECT = (1 << 0),
     FLV_NO_SEQUENCE_END = (1 << 1),
     FLV_ADD_KEYFRAME_INDEX = (1 << 2),
@@ -72,7 +75,8 @@ typedef enum {
     FLV_NO_DURATION_FILESIZE = (1 << 4),
 } FLVFlags;
 
-typedef struct FLVFileposition {
+typedef struct FLVFileposition 
+{
     int64_t keyframe_position;
     double keyframe_timestamp;
     struct FLVFileposition *next;
@@ -775,6 +779,7 @@ static int flv_write_header(AVFormatContext *s)
     return 0;
 }
 
+//写flv文件尾
 static int flv_write_trailer(AVFormatContext *s)
 {
     int64_t file_size;
@@ -784,7 +789,8 @@ static int flv_write_trailer(AVFormatContext *s)
     int i, res;
     int64_t cur_pos = avio_tell(s->pb);
 
-    if (build_keyframes_idx) {
+    if (build_keyframes_idx) 
+	{
         FLVFileposition *newflv_posinfo, *p;
 
         avio_seek(pb, flv->videosize_offset, SEEK_SET);

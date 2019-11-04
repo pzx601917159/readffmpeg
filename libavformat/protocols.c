@@ -68,6 +68,8 @@ extern const URLProtocol ff_librtmpte_protocol;
 extern const URLProtocol ff_libsrt_protocol;
 extern const URLProtocol ff_libssh_protocol;
 extern const URLProtocol ff_libsmbclient_protocol;
+extern const URLProtocol ff_pzx_protocol;
+extern const URLProtocol ff_pzxhttp_protocl;    // 自定义的http获取信息
 
 #include "libavformat/protocol_list.c"
 

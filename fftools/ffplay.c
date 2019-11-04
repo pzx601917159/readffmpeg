@@ -3913,7 +3913,6 @@ static void event_loop(VideoState *cur_stream)
             break;
         }
     }
-    */
 }
 
 static int opt_frame_size(void *optctx, const char *opt, const char *arg)
@@ -4193,7 +4192,6 @@ int main(int argc, char **argv)
         av_log(NULL, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
-    */
 	// 忽略SDL的事件
     //SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     //SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
@@ -4237,7 +4235,6 @@ int main(int argc, char **argv)
             do_exit(NULL);
         }
     }
-    */
 	// 打开流或者文件
     is = stream_open(input_filename, file_iformat);
     if (!is) {
